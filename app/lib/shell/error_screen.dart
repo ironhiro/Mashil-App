@@ -24,7 +24,7 @@ class ErrorScreen extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(offline ? Icons.wifi_off_rounded : Icons.error_outline_rounded, size: 56, color: MashilColors.accent),
+                Icon(offline ? Icons.wifi_off_rounded : Icons.error_outline_rounded, size: 56, color: MashilColors.of(context).accent),
                 const SizedBox(height: 16),
                 Text(offline ? l.offlineTitle : l.loadFailedTitle, style: t.titleMedium, textAlign: TextAlign.center),
                 const SizedBox(height: 8),
