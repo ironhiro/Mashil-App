@@ -1,0 +1,4 @@
+#include "Generated.xcconfig"
+
+// 카카오 네이티브 앱 키 등 (gitignore). 예: KAKAO_NATIVE_APP_KEY=xxxx
+#include? "Secrets.xcconfig"

@@ -1,0 +1,16 @@
+{
+  "@@locale": "en",
+  "appTitle": "Mashil",
+  "offlineTitle": "You're offline",
+  "loadFailedTitle": "Couldn't load the page",
+  "offlineBody": "We'll reload automatically when you're back online.",
+  "loadFailedBody": "Please try again in a moment.",
+  "retry": "Try again",
+  "pressBackAgainToExit": "Press back again to exit",
+  "updateRequiredTitle": "Update required",
+  "updateAvailableTitle": "A new version is available",
+  "updateRequiredBody": "Please update to the latest version to keep using Mashil.",
+  "updateAvailableBody": "Get the latest improvements to Mashil.",
+  "later": "Later",
+  "update": "Update"
+}

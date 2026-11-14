@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 기본(한국어 외 언어). 한국어는 values-ko/strings.xml -->
+<resources>
+    <string name="app_name">Mashil</string>
+</resources>
