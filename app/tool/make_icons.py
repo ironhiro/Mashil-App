@@ -130,9 +130,16 @@ def adaptive(px, kind):
     return c.out()
 
 
-def glyph(px_canvas, door_h_px, night):
-    """Splash door glyph on transparent bg, centred on the door frame."""
-    g = FULL
+# 닫힌 문: 문짝이 문틀을 다 덮고, 손잡이는 오른쪽 끝 안쪽 (lib/shell/splash_gate.dart 의 시작 프레임과 같다)
+CLOSED = dict(frame=FULL["frame"], leaf=[(33, 22), (67, 22), (67, 80), (33, 80)])
+CLOSED_HANDLE = (62, 53, 2.8)
+
+
+def glyph(px_canvas, door_h_px, night, closed=False):
+    """Splash door glyph on transparent bg, centred on the door frame.
+    closed=True: 시스템 스플래시용 닫힌 문. 앱이 뜨면 Flutter 가 이 문을 이어받아 연다."""
+    g = CLOSED if closed else FULL
+    handle = CLOSED_HANDLE if closed else HANDLE
     x0, y0, x1, y1 = g["frame"]
     k = door_h_px / (y1 - y0 + 3)
     cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
@@ -143,7 +150,7 @@ def glyph(px_canvas, door_h_px, night):
     else:  # light launch bg (#E8F2F0): teal outlined glyph for contrast
         c.rect((x0 - 1.5, y0 - 1.5, x1 + 1.5, y1 + 1.5), None, r=3.5, outline=BG, width=3)
         c.poly(g["leaf"], BG)
-    c.cut_circle(*HANDLE)
+    c.cut_circle(*handle)
     return c.out()
 
 
@@ -162,9 +169,9 @@ def main():
         for night in (False, True):
             q = "-night" if night else ""
             # legacy launch screen: 96dp bitmap, door ~80dp tall
-            save(glyph(round(96 * d), 80 * d, night), RES / f"drawable{q}-{name}/launch_icon.png")
+            save(glyph(round(96 * d), 80 * d, night, closed=True), RES / f"drawable{q}-{name}/launch_icon.png")
             # Android 12 splash: 240dp icon area, content inside 160dp circle
-            save(glyph(round(240 * d), 110 * d, night), RES / f"drawable{q}-{name}/splash_icon.png")
+            save(glyph(round(240 * d), 110 * d, night, closed=True), RES / f"drawable{q}-{name}/splash_icon.png")
 
     import json
 

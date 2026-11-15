@@ -16,6 +16,7 @@ import 'services/connectivity_service.dart';
 import 'services/external_launcher.dart';
 import 'services/location_service.dart';
 import 'services/version_checker.dart';
+import 'shell/splash_gate.dart';
 import 'shell/web_shell_screen.dart';
 import 'theme.dart';
 
@@ -57,21 +58,24 @@ class MashilApp extends StatelessWidget {
     final location = LocationService();
     final auth = SocialAuthService(config);
     // 홈(웹뷰)은 한 번만 만들고, 언어가 바뀌면 MaterialApp 만 다시 그린다 (웹뷰를 새로 만들지 않음).
-    final home = _VersionGate(
-      checker: VersionChecker(config.apiBaseUrl),
-      appInfo: appInfo,
-      child: WebShellScreen(
-        config: config,
-        launcher: launcher,
-        connectivity: ConnectivityService(),
-        bridgeFactory: (runJs, isTrusted) => MashilJsBridge(
-          runJavaScript: runJs,
-          location: location,
+    // 시작 연출(닫힌 문이 열림)은 웹뷰 위에 덮이고, 웹뷰는 그 뒤에서 이미 불러온다.
+    final home = SplashGate(
+      child: _VersionGate(
+        checker: VersionChecker(config.apiBaseUrl),
+        appInfo: appInfo,
+        child: WebShellScreen(
+          config: config,
           launcher: launcher,
-          auth: auth,
-          appInfo: appInfo,
-          language: language,
-          isTrustedPage: isTrusted,
+          connectivity: ConnectivityService(),
+          bridgeFactory: (runJs, isTrusted) => MashilJsBridge(
+            runJavaScript: runJs,
+            location: location,
+            launcher: launcher,
+            auth: auth,
+            appInfo: appInfo,
+            language: language,
+            isTrustedPage: isTrusted,
+          ),
         ),
       ),
     );
