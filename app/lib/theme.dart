@@ -1,29 +1,29 @@
 import 'package:material_ui/material_ui.dart';
 
-/// docs/07-ui-design.md "C. 타일" 색 토큰 중 네이티브 화면(스플래시·오류·업데이트)에 쓰는 것.
-/// 웹(Mashil-web src/design/tokens.ts)과 같은 값을 쓴다.
+/// 네이티브 화면(스플래시·오류·업데이트)의 색. 웹(Mashil-web src/styles/tokens.css, Hallmark · Wayfind)과
+/// 같은 값의 hex 사본이다: 회청색 종이, 청흑 잉크, 지금 열린 것과 주 행동은 코발트, 모서리 0, 2px 잉크 테두리.
 class MashilColors {
-  /// 아이콘 바탕 "열린 문" — 라이트 accent
-  static const accent = Color(0xFF1F6F69);
+  /// 앱 아이콘 "열린 문"의 바탕 (브랜드 자산, 테마와 별개로 유지)
+  static const doorBg = Color(0xFF1F6F69);
 
   static const light = MashilTokens(
-    bg: Color(0xFFE8F2F0),
-    surface: Color(0xFFFFFFFF),
-    line: Color(0xFFC3DCD8),
-    text: Color(0xFF0E3B3A),
-    textMuted: Color(0xFF2F6F6B),
-    accent: Color(0xFF1F6F69),
-    onAccent: Color(0xFFFFFFFF),
+    bg: Color(0xFFEDF0F4), // paper
+    surface: Color(0xFFFBFEFF), // paper-3
+    line: Color(0xFF0A0D13), // 2px 테두리는 잉크
+    text: Color(0xFF0A0D13), // ink
+    textMuted: Color(0xFF565B64), // muted
+    accent: Color(0xFF2055E1), // cobalt
+    onAccent: Color(0xFFFCFEFF),
   );
 
   static const dark = MashilTokens(
-    bg: Color(0xFF111213),
-    surface: Color(0xFF1B1C1E),
-    line: Color(0xFF2A2C2F),
-    text: Color(0xFFECECEC),
-    textMuted: Color(0xFF9A9DA3),
-    accent: Color(0xFF5CC2B7),
-    onAccent: Color(0xFF0B1F1D),
+    bg: Color(0xFF080B10), // night paper
+    surface: Color(0xFF171B21), // night band
+    line: Color(0xFFEFF2F5),
+    text: Color(0xFFEFF2F5),
+    textMuted: Color(0xFFA0A5AC),
+    accent: Color(0xFF3569E7), // night cobalt (흰 글자 4.8:1)
+    onAccent: Color(0xFFFCFEFF),
   );
 
   static MashilTokens of(BuildContext context) =>
@@ -46,11 +46,8 @@ class MashilTokens {
 
 ThemeData mashilTheme(Brightness b) {
   final t = b == Brightness.dark ? MashilColors.dark : MashilColors.light;
-  final scheme =
-      ColorScheme.fromSeed(
-        seedColor: MashilColors.accent,
-        brightness: b,
-      ).copyWith(
+  final scheme = ColorScheme.fromSeed(seedColor: t.accent, brightness: b)
+      .copyWith(
         primary: t.accent,
         onPrimary: t.onAccent,
         surface: t.surface,
@@ -58,27 +55,39 @@ ThemeData mashilTheme(Brightness b) {
         onSurfaceVariant: t.textMuted,
         outline: t.line,
       );
-  const radius = BorderRadius.all(Radius.circular(6));
+  // Wayfind: 모서리 0, 깊이는 테두리로
+  const square = RoundedRectangleBorder();
+  final bar = BorderSide(color: t.line, width: 2);
   return ThemeData(
     colorScheme: scheme,
     scaffoldBackgroundColor: t.bg,
     useMaterial3: true,
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        minimumSize: const Size(0, 48),
-        shape: const RoundedRectangleBorder(borderRadius: radius),
-        textStyle: const TextStyle(fontWeight: FontWeight.w600),
+        minimumSize: const Size(0, 52),
+        shape: square,
+        textStyle: const TextStyle(fontWeight: FontWeight.w800),
       ),
     ),
-    dialogTheme: const DialogThemeData(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(14)),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(0, 52),
+        shape: square,
+        side: bar,
+        foregroundColor: t.text,
       ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(shape: square, foregroundColor: t.text),
+    ),
+    dialogTheme: DialogThemeData(
+      shape: RoundedRectangleBorder(side: bar),
+      backgroundColor: t.bg,
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: t.text,
       contentTextStyle: TextStyle(color: t.bg),
-      shape: const RoundedRectangleBorder(borderRadius: radius),
+      shape: square,
       behavior: SnackBarBehavior.floating,
     ),
   );
