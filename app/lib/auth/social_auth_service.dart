@@ -49,8 +49,10 @@ abstract interface class SocialSignInProvider {
 
 /// 웹뷰 안에서 OAuth 를 하지 않고 네이티브 SDK 로 로그인한다 (APP-12, Google 은 웹뷰 로그인 차단).
 class SocialAuthService {
-  SocialAuthService(AppConfig config) {
-    if (config.kakaoNativeAppKey != null) _providers[AuthProvider.kakao] = KakaoSignInProvider();
+  SocialAuthService(AppConfig config, {Future<void>? kakaoReady}) {
+    if (config.kakaoNativeAppKey != null) {
+      _providers[AuthProvider.kakao] = KakaoSignInProvider(kakaoReady ?? Future<void>.value());
+    }
     final googleReady = Platform.isIOS ? config.googleIosClientId != null : config.googleServerClientId != null;
     if (googleReady) _providers[AuthProvider.google] = GoogleSignInProvider(config);
     if (Platform.isIOS) _providers[AuthProvider.apple] = AppleSignInProvider(); // 스토어 요건 STO-04
@@ -70,8 +72,16 @@ class SocialAuthService {
 }
 
 class KakaoSignInProvider implements SocialSignInProvider {
+  /// [ready] 는 앱 시작 때 뒤에서 돌린 KakaoSdk.init. 실패했으면 로그인할 때 SignInFailed 로 알린다.
+  KakaoSignInProvider(Future<void> ready) : _ready = ready.then((_) => null, onError: (Object e) => e);
+
+  /// 초기화가 끝나면 null, 실패했으면 그 오류 (기다리는 쪽이 없어도 처리되지 않은 오류가 되지 않게 값으로 받아 둔다)
+  final Future<Object?> _ready;
+
   @override
   Future<SocialCredential> signIn(String? nonce) async {
+    final initError = await _ready;
+    if (initError != null) throw SignInFailed('kakao init $initError');
     try {
       // 카카오톡이 있으면 앱 전환 로그인, 없거나 실패하면 카카오계정(브라우저) 로그인
       kakao.OAuthToken token;
@@ -102,6 +112,7 @@ class KakaoSignInProvider implements SocialSignInProvider {
 
   @override
   Future<void> signOut() async {
+    if (await _ready != null) return; // 초기화가 안 됐으면 카카오 세션도 없다
     try {
       await kakao.UserApi.instance.logout();
     } catch (_) {

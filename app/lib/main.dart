@@ -16,20 +16,26 @@ import 'services/connectivity_service.dart';
 import 'services/external_launcher.dart';
 import 'services/location_service.dart';
 import 'services/version_checker.dart';
+import 'shell/splash_gate.dart';
 import 'shell/web_shell_screen.dart';
 import 'theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final config = AppConfig.fromEnvironment();
-  if (config.kakaoNativeAppKey != null) {
-    await kakao.KakaoSdk.init(nativeAppKey: config.kakaoNativeAppKey);
-  }
-  final info = await PackageInfo.fromPlatform();
-  final language = await AppLanguage.load(AppLocalizations.supportedLocales);
+  // 카카오 SDK 초기화는 에뮬레이터에서 0.7초쯤 걸린다. 첫 화면을 그 뒤로 미루지 않고 뒤에서 돌리고,
+  // 카카오 로그인·로그아웃 직전에만 기다린다 (SocialAuthService).
+  final kakaoReady = config.kakaoNativeAppKey == null
+      ? null
+      : kakao.KakaoSdk.init(nativeAppKey: config.kakaoNativeAppKey);
+  final (info, language) = await (
+    PackageInfo.fromPlatform(),
+    AppLanguage.load(AppLocalizations.supportedLocales),
+  ).wait;
   runApp(
     MashilApp(
       config: config,
+      kakaoReady: kakaoReady,
       language: language,
       appInfo: AppInfo(
         version: info.version,
@@ -45,9 +51,13 @@ class MashilApp extends StatelessWidget {
     required this.config,
     required this.appInfo,
     required this.language,
+    this.kakaoReady,
   });
 
   final AppConfig config;
+
+  /// 카카오 SDK 초기화 (키가 없으면 null)
+  final Future<void>? kakaoReady;
   final AppInfo appInfo;
   final AppLanguage language;
 
@@ -55,23 +65,30 @@ class MashilApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final launcher = ExternalLauncher();
     final location = LocationService();
-    final auth = SocialAuthService(config);
+    final auth = SocialAuthService(config, kakaoReady: kakaoReady);
     // 홈(웹뷰)은 한 번만 만들고, 언어가 바뀌면 MaterialApp 만 다시 그린다 (웹뷰를 새로 만들지 않음).
-    final home = _VersionGate(
-      checker: VersionChecker(config.apiBaseUrl),
-      appInfo: appInfo,
-      child: WebShellScreen(
-        config: config,
-        launcher: launcher,
-        connectivity: ConnectivityService(),
-        bridgeFactory: (runJs, isTrusted) => MashilJsBridge(
-          runJavaScript: runJs,
-          location: location,
+    // 시작 연출(닫힌 문이 열림)은 웹뷰 위에 덮이고, 웹뷰는 그 뒤에서 이미 불러온다.
+    // 첫 페이지가 뜨면 true: 시작 연출은 그때까지 닫힌 문으로 기다린다 (빈 웹뷰가 보이지 않도록)
+    final webShown = ValueNotifier(false);
+    final home = SplashGate(
+      ready: webShown,
+      child: _VersionGate(
+        checker: VersionChecker(config.apiBaseUrl),
+        appInfo: appInfo,
+        child: WebShellScreen(
+          config: config,
           launcher: launcher,
-          auth: auth,
-          appInfo: appInfo,
-          language: language,
-          isTrustedPage: isTrusted,
+          connectivity: ConnectivityService(),
+          onFirstShown: () => webShown.value = true,
+          bridgeFactory: (runJs, isTrusted) => MashilJsBridge(
+            runJavaScript: runJs,
+            location: location,
+            launcher: launcher,
+            auth: auth,
+            appInfo: appInfo,
+            language: language,
+            isTrustedPage: isTrusted,
+          ),
         ),
       ),
     );

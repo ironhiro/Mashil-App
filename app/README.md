@@ -66,6 +66,31 @@ python tool/make_dev_env.py --web http://10.0.2.2:5173
 
 iOS 는 `ios/Flutter/Secrets.xcconfig` (gitignore) 에 `KAKAO_NATIVE_APP_KEY=...` 를 둔다. Sign in with Apple 은 iOS 에서만 노출 (STO-04).
 
+### 아이폰에서 테스트 (Mac)
+
+개발 서버는 윈도우 PC 에 그대로 두고, Mac 은 앱을 빌드해 아이폰에 올리기만 한다. PC·Mac·아이폰이 같은 와이파이여야 한다.
+
+**PC (개발 서버)**
+1. vite 를 와이파이에서 보이게 띄운다: `npm run dev -- --host 0.0.0.0 --port 5173`. 처음이면 Windows 방화벽 창에서 **개인 네트워크** 허용. API 는 vite 가 `/api` 로 프록시하므로 따로 열 필요 없다
+2. PC 의 와이파이 IP 확인 (`ipconfig` 의 IPv4, 예: `192.168.0.10`)
+3. 카카오 콘솔 [플랫폼] → Web 에 `http://<PC IP>:5173` 추가 (지도 JS SDK). 카카오 로그인까지 볼 거면 [플랫폼] → iOS 에 번들 ID `kr.mashil.mashil` 추가
+
+**Mac (한 번만)**
+1. Xcode (App Store), Flutter, CocoaPods (`brew install cocoapods`) 설치, `flutter doctor` 로 iOS 항목 확인
+2. 저장소를 받고 `app/` 에서 `flutter pub get`
+3. 키 파일 두 개를 직접 만든다 (git 에 없음, 메신저·메일로 키를 보내지 말 것):
+   - `env/ios.json`: `env/example.json` 을 복사해 `WEB_BASE_URL`·`API_BASE_URL` 을 `http://<PC IP>:5173`, `KAKAO_NATIVE_APP_KEY` 를 채운다 (Google 은 비워도 됨)
+   - `ios/Flutter/Secrets.xcconfig`: `KAKAO_NATIVE_APP_KEY=<같은 키>`
+4. `open ios/Runner.xcworkspace` → Runner 타깃 → Signing & Capabilities → Team 에 내 Apple ID (무료 개인 팀 가능)
+
+**아이폰**
+1. USB 로 Mac 에 연결하고 "이 컴퓨터 신뢰"
+2. 설정 → 개인정보 보호 및 보안 → **개발자 모드** 켜기 (재시동)
+3. Mac 에서 `flutter run --dart-define-from-file=env/ios.json` (기기가 여러 개면 `-d <기기>`)
+4. 처음 실행 때 "신뢰하지 않는 개발자"가 뜨면 설정 → 일반 → VPN 및 기기 관리 → 내 Apple ID → 신뢰
+
+무료 개인 팀으로 설치한 앱은 7일 뒤 열리지 않는다 (다시 `flutter run`). 무료 팀은 Sign in with Apple 기능을 쓸 수 없어서 애플 로그인은 실패한다.
+
 ## JS 브리지
 
 - 웹 → 앱: `window.MashilBridge.postMessage(JSON.stringify({ requestId, method, params }))`
@@ -76,7 +101,7 @@ iOS 는 `ios/Flutter/Secrets.xcconfig` (gitignore) 에 `KAKAO_NATIVE_APP_KEY=...
 | method | params | 응답 |
 |---|---|---|
 | `getAppInfo` | — | `{ ok, version, platform, providers, language }` |
-| `getLocation` | — | `{ ok, lat, lng, accuracy }` / `{ ok:false, reason: denied·deniedForever·serviceDisabled·timeout }` |
+| `getLocation` | `{ maximumAgeMs?, highAccuracy?, timeoutMs? }` | `{ ok, lat, lng, accuracy, cached }` / `{ ok:false, reason: denied·deniedForever·serviceDisabled·timeout }`. `maximumAgeMs` 안의 마지막 위치면 바로 (`cached: true`) |
 | `openSettings` | — | `{ ok }` |
 | `openDirections` | `{ lat, lng, name }` | `{ ok, app: kakaomap·web }` |
 | `signIn` | `{ provider: kakao·google·apple, nonce }` | `{ ok, provider, idToken?, accessToken?, authorizationCode?, displayName? }` / `{ ok:false, reason: cancelled·failed·busy·unknownProvider }` |
@@ -115,7 +140,7 @@ export async function signInWithApp(provider: 'kakao' | 'google' | 'apple') {
 }
 ```
 
-위치는 `isApp()` 이면 `callNative('getLocation')`, 아니면 `navigator.geolocation` 으로 폴백한다 (APP-03).
+위치는 `isApp()` 이면 `callNative('getLocation')`, 아니면 `navigator.geolocation` 으로 폴백한다 (APP-03). 홈은 먼저 10분 안의 기억된 위치로 지도를 그리고, 그것이 기억값이었으면 뒤에서 정밀하게 다시 재어 30m 넘게 달라졌을 때만 옮긴다.
 
 ## 다국어 (ko / en)
 
