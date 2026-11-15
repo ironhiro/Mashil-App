@@ -22,6 +22,10 @@
 - 웹 프런트: `D:\code\Mashil-web` (Vite + React 19 + MUI)
 - 백엔드: `D:\code\C#\Mashil` (ASP.NET Core 10 + EF Core + PostGIS, `tools/Mashil.CsvImport`)
 
+## 개발 환경
+
+Flutter **3.47 이상** (개발·CI 는 3.50.0, Dart 3.14). 그보다 낮으면 `flutter pub get` 이 "Flutter SDK version" 오류로 멈춘다. `flutter upgrade` 로 올리고, iOS 는 그다음 `cd app/ios && pod install`.
+
 ## 사용한 오픈소스 (Flutter 앱, `app/`)
 
 버전은 `app/pubspec.lock` 에 실제로 받은 것 (2026-11-16). 라이선스는 각 패키지의 LICENSE 파일 기준.

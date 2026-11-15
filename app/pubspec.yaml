@@ -20,6 +20,8 @@ version: 1.0.0+1
 
 environment:
   sdk: ^3.14.0
+  # material_ui 등 의존 패키지가 Flutter 3.47 이상을 요구한다 (개발·CI 는 3.50.0).
+  flutter: ">=3.47.0"
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
