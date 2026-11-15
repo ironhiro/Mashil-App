@@ -45,6 +45,9 @@ class _WebShellScreenState extends State<WebShellScreen> {
   Uri? _currentUrl;
   int _progress = 0;
   bool _firstLoadDone = false;
+  // 문서를 새로 불러오는 중인지 (onPageStarted ~ onPageFinished). SPA 화면 전환(pushState)과 지도 타일·API 같은
+  // 하위 리소스도 onProgress 를 올리므로, 진행 막대는 이 동안에만 보인다.
+  bool _documentLoading = false;
   bool _offline = false;
   String? _loadError;
   DateTime? _lastBackAt;
@@ -102,12 +105,20 @@ class _WebShellScreenState extends State<WebShellScreen> {
         }
       },
       onUrlChange: (c) => _currentUrl = c.url == null ? _currentUrl : Uri.tryParse(c.url!),
-      onPageStarted: (url) => _currentUrl = Uri.tryParse(url),
+      onPageStarted: (url) {
+        _currentUrl = Uri.tryParse(url);
+        if (mounted) setState(() => _documentLoading = true);
+      },
       onProgress: (p) => mounted ? setState(() => _progress = p) : null,
       onPageFinished: (url) {
         _currentUrl = Uri.tryParse(url);
         _controller.runJavaScript("window.dispatchEvent(new Event('mashilbridgeready'));");
-        if (mounted) setState(() => _firstLoadDone = true);
+        if (mounted) {
+          setState(() {
+            _firstLoadDone = true;
+            _documentLoading = false;
+          });
+        }
         _markShown();
       },
       onWebResourceError: (e) {
@@ -173,8 +184,9 @@ class _WebShellScreenState extends State<WebShellScreen> {
           child: Stack(
             children: [
               WebViewWidget(controller: _controller),
-              // 첫 로드는 보통 시작 연출(닫힌 문) 뒤에서 끝난다. 그보다 늦으면 위쪽 가는 줄만 움직인다.
-              if ((!_firstLoadDone || _progress < 100) && !showError)
+              // 첫 로드는 보통 시작 연출(닫힌 문) 뒤에서 끝난다. 그보다 늦거나 문서를 새로 불러올 때만 위쪽 가는 줄.
+              // 웹 안의 화면 전환에는 띄우지 않는다 (웹이 자기 로딩 표시를 한다).
+              if ((!_firstLoadDone || (_documentLoading && _progress < 100)) && !showError)
                 Align(
                   alignment: Alignment.topCenter,
                   child: LinearProgressIndicator(value: _firstLoadDone ? _progress / 100 : null),
