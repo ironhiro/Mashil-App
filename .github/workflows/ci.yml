@@ -1,0 +1,39 @@
+# 앱 셸(Flutter) CI — 프로젝트는 app/ 아래
+#   모든 push·PR: flutter analyze + flutter test
+# 스토어 빌드·서명은 여기서 하지 않는다 (키와 시크릿이 필요).
+name: ci
+
+on:
+  push:
+    branches: ["**"]
+    paths: ["app/**", ".github/workflows/ci.yml"]
+  pull_request:
+    paths: ["app/**", ".github/workflows/ci.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  flutter:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter --version
+      - run: flutter pub get
+      - name: Analyze
+        run: flutter analyze
+      - name: Test
+        run: flutter test
