@@ -37,9 +37,14 @@ class WebShellScreen extends StatefulWidget {
 }
 
 class _WebShellScreenState extends State<WebShellScreen> {
-  late final WebViewController _controller;
+  // 첫 프레임 뒤에 만든다. Android 웹뷰는 만들 때 메인 스레드를 1초 넘게 붙잡아서, initState 에서 만들면
+  // 그동안 첫 화면이 안 그려지고 시스템 스플래시만 보인다. 뒤로 미루면 시작 연출(닫힌 문)이 먼저 뜨고 그 뒤에서 만든다.
+  WebViewController? _controller;
   late final NavigationPolicy _policy = NavigationPolicy(widget.config.allowedHosts);
-  late final MashilJsBridge _bridge;
+  late final MashilJsBridge _bridge = widget.bridgeFactory(
+    (js) => _controller?.runJavaScript(js) ?? Future<void>.value(),
+    () => _policy.isTrusted(_currentUrl),
+  );
   StreamSubscription<bool>? _online;
 
   Uri? _currentUrl;
@@ -63,15 +68,29 @@ class _WebShellScreenState extends State<WebShellScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     // 첫 페이지가 그려지기 전의 웹뷰 바탕을 앱 바탕(paper)과 같게: 흰 화면이 번쩍이지 않도록
-    _controller.setBackgroundColor(MashilColors.of(context).bg);
+    _controller?.setBackgroundColor(MashilColors.of(context).bg);
   }
 
   @override
   void initState() {
     super.initState();
-    _controller = WebViewController();
-    _bridge = widget.bridgeFactory(_controller.runJavaScript, () => _policy.isTrusted(_currentUrl));
-    _setUp();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // 첫 프레임이 실제로 화면에 올라가 시스템 스플래시가 걷힐 때까지 기다린다. 그 전환도 메인 스레드에서 일어나서,
+      // 너무 일찍(50ms) 만들면 전환이 웹뷰 생성 뒤로 밀린다. 문은 페이지가 뜰 때까지 닫혀 있으므로 이 지연은 보이지 않는다.
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      if (!mounted) return;
+      final c = WebViewController();
+      c.setBackgroundColor(MashilColors.of(context).bg);
+      setState(() => _controller = c);
+      try {
+        await _setUp(c);
+      } catch (e) {
+        // 웹뷰 설정이 실패하면 오류 화면 (다시 시도는 loadRequest 부터)
+        if (!mounted) return;
+        setState(() => _loadError = 'setup ($e)');
+        _markShown();
+      }
+    });
     _online = widget.connectivity.onlineStream.listen((online) {
       if (!mounted) return;
       final wasOffline = _offline;
@@ -81,16 +100,16 @@ class _WebShellScreenState extends State<WebShellScreen> {
     });
   }
 
-  Future<void> _setUp() async {
-    final ua = await _controller.getUserAgent();
-    await _controller.setJavaScriptMode(JavaScriptMode.unrestricted);
+  Future<void> _setUp(WebViewController c) async {
+    final ua = await c.getUserAgent();
+    await c.setJavaScriptMode(JavaScriptMode.unrestricted);
     // 웹이 앱 안인지 알 수 있게 UA 끝에 붙인다 (브리지 유무로도 판별 가능)
-    await _controller.setUserAgent('${ua ?? ''} MashilApp/${_bridge.appInfo.version} (${_bridge.appInfo.platform})'.trim());
-    await _controller.addJavaScriptChannel(
+    await c.setUserAgent('${ua ?? ''} MashilApp/${_bridge.appInfo.version} (${_bridge.appInfo.platform})'.trim());
+    await c.addJavaScriptChannel(
       MashilJsBridge.channelName,
       onMessageReceived: (m) => _bridge.onMessage(m.message),
     );
-    await _controller.setNavigationDelegate(NavigationDelegate(
+    await c.setNavigationDelegate(NavigationDelegate(
       onNavigationRequest: (req) async {
         final uri = Uri.tryParse(req.url);
         if (uri == null) return NavigationDecision.prevent;
@@ -112,7 +131,7 @@ class _WebShellScreenState extends State<WebShellScreen> {
       onProgress: (p) => mounted ? setState(() => _progress = p) : null,
       onPageFinished: (url) {
         _currentUrl = Uri.tryParse(url);
-        _controller.runJavaScript("window.dispatchEvent(new Event('mashilbridgeready'));");
+        c.runJavaScript("window.dispatchEvent(new Event('mashilbridgeready'));");
         if (mounted) {
           setState(() {
             _firstLoadDone = true;
@@ -135,22 +154,25 @@ class _WebShellScreenState extends State<WebShellScreen> {
         }
       },
     ));
-    await _controller.loadRequest(widget.config.webBaseUrl);
+    await c.loadRequest(widget.config.webBaseUrl);
   }
 
   Future<void> _retry() async {
+    final c = _controller;
+    if (c == null) return; // 아직 만드는 중: 만들고 나면 알아서 첫 페이지를 부른다
     setState(() => _loadError = null);
     if (_currentUrl != null && _firstLoadDone) {
-      await _controller.reload();
+      await c.reload();
     } else {
-      await _controller.loadRequest(widget.config.webBaseUrl);
+      await c.loadRequest(widget.config.webBaseUrl);
     }
   }
 
   // Android 뒤로가기: 웹 history → 없으면 "한 번 더 누르면 종료" (APP-05)
   Future<void> _onBack() async {
-    if (await _controller.canGoBack()) {
-      await _controller.goBack();
+    final c = _controller;
+    if (c != null && await c.canGoBack()) {
+      await c.goBack();
       return;
     }
     final now = DateTime.now();
@@ -186,7 +208,10 @@ class _WebShellScreenState extends State<WebShellScreen> {
           bottom: false,
           child: Stack(
             children: [
-              WebViewWidget(controller: _controller),
+              if (_controller case final c?)
+                WebViewWidget(controller: c)
+              else
+                ColoredBox(color: MashilColors.of(context).bg, child: const SizedBox.expand()),
               // 첫 로드는 보통 시작 연출(닫힌 문) 뒤에서 끝난다. 그보다 늦거나 문서를 새로 불러올 때만 위쪽 가는 줄.
               // 웹 안의 화면 전환에는 띄우지 않는다 (웹이 자기 로딩 표시를 한다).
               if ((!_firstLoadDone || (_documentLoading && _progress < 100)) && !showError)
