@@ -17,7 +17,7 @@ class AppInfo {
 /// | method | params | 응답 |
 /// |---|---|---|
 /// | getAppInfo | — | { ok, version, platform, providers, language } |
-/// | getLocation | — | { ok, lat, lng, accuracy } / { ok:false, reason } |
+/// | getLocation | { maximumAgeMs?, highAccuracy?, timeoutMs? } | { ok, lat, lng, accuracy, cached } / { ok:false, reason } |
 /// | openSettings | — | { ok } |
 /// | openDirections | { lat, lng, name } | { ok, app } |
 /// | signIn | { provider, nonce } | { ok, provider, idToken?, accessToken?, authorizationCode?, displayName? } / { ok:false, reason } |
@@ -76,9 +76,24 @@ class MashilJsBridge {
       case 'getLocation':
         final state = await location.ensurePermission();
         if (state != PermissionState.granted) return {'ok': false, 'reason': state.name};
-        final pos = await location.currentPosition();
+        // maximumAgeMs 안의 마지막 위치가 있으면 새로 재지 않고 바로 준다 (cached: true).
+        // 예전 웹은 파라미터를 보내지 않으므로 기본값은 예전과 같다 (정밀하게, 12초까지).
+        final maxAge = _num(m.params['maximumAgeMs']);
+        if (maxAge != null && maxAge > 0) {
+          final last = await location.lastKnown(maxAge: Duration(milliseconds: maxAge.round()));
+          if (last != null) {
+            return {'ok': true, 'lat': last.lat, 'lng': last.lng, 'accuracy': last.accuracy, 'cached': true};
+          }
+        }
+        final timeoutMs = _num(m.params['timeoutMs']);
+        final pos = await location.currentPosition(
+          highAccuracy: m.params['highAccuracy'] != false,
+          timeout: timeoutMs == null
+              ? const Duration(seconds: 12)
+              : Duration(milliseconds: timeoutMs.clamp(2000, 30000).round()),
+        );
         if (pos == null) return {'ok': false, 'reason': 'timeout'};
-        return {'ok': true, 'lat': pos.lat, 'lng': pos.lng, 'accuracy': pos.accuracy};
+        return {'ok': true, 'lat': pos.lat, 'lng': pos.lng, 'accuracy': pos.accuracy, 'cached': false};
 
       case 'openSettings':
         return {'ok': await location.openAppSettings()};

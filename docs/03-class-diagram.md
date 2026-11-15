@@ -829,7 +829,7 @@ classDiagram
 
 | method | params | 응답 |
 |---|---|---|
-| `getLocation` | — | `{ ok, lat, lng, accuracy }` 또는 `{ ok:false, reason:"denied"\|"deniedForever"\|"serviceDisabled"\|"timeout" }` |
+| `getLocation` | `{ maximumAgeMs?, highAccuracy?, timeoutMs? }` | `{ ok, lat, lng, accuracy, cached }` 또는 `{ ok:false, reason:"denied"\|"deniedForever"\|"serviceDisabled"\|"timeout" }`. `maximumAgeMs` 안의 마지막 위치가 있으면 새로 재지 않고 바로 준다 (`cached: true`). 파라미터가 없으면 정밀 측정, 12초까지 |
 | `openSettings` | — | `{ ok }` |
 | `openDirections` | `{ lat, lng, name }` | `{ ok, app:"kakaomap"\|"web" }` |
 | `getAppInfo` | — | `{ version, platform, providers:["google","kakao","apple"] }` (웹에서 앱 여부와 노출할 로그인 버튼 판별) |
