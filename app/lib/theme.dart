@@ -1,29 +1,30 @@
 import 'package:material_ui/material_ui.dart';
 
 /// 네이티브 화면(스플래시·오류·업데이트)의 색. 웹(Mashil-web src/styles/tokens.css, Hallmark · Wayfind)과
-/// 같은 값의 hex 사본이다: 회청색 종이, 청흑 잉크, 지금 열린 것과 주 행동은 Pantone 286 C 파랑, 곧 닫힘 신호는 485 C 빨강, 모서리 0, 2px 잉크 테두리.
+/// 같은 값의 hex 사본이다. 전부 Pantone 색: 종이 656 C, 잉크 282 C (남색), 지금 열린 것과 주 행동은 286 C 파랑,
+/// 곧 닫힘 신호는 485 C 빨강 (둘은 섞지 않는다). 모서리 0, 2px 잉크 테두리.
 class MashilColors {
   /// 앱 아이콘 "열린 문"의 바탕 = 테마 파랑, 손잡이 = 신호 빨강 (남녀 화장실 색을 섞지 않고 역할로 나눔)
   static const doorBg = Color(0xFF0033A0); // Pantone 286 C
   static const signal = Color(0xFFDA291C); // Pantone 485 C
 
   static const light = MashilTokens(
-    bg: Color(0xFFEDF0F4), // paper
-    surface: Color(0xFFFBFEFF), // paper-3
-    line: Color(0xFF0A0D13), // 2px 테두리는 잉크
-    text: Color(0xFF0A0D13), // ink
-    textMuted: Color(0xFF565B64), // muted
+    bg: Color(0xFFDDE5ED), // paper = Pantone 656 C
+    surface: Color(0xFFFFFFFF), // paper-3
+    line: Color(0xFF041E42), // 2px 테두리는 잉크
+    text: Color(0xFF041E42), // ink = Pantone 282 C
+    textMuted: Color(0xFF425563), // muted = Pantone 7545 C
     accent: Color(0xFF0033A0), // Pantone 286 C
     onAccent: Color(0xFFFCFEFF),
   );
 
   static const dark = MashilTokens(
-    bg: Color(0xFF080B10), // night paper
-    surface: Color(0xFF171B21), // night band
-    line: Color(0xFFEFF2F5),
-    text: Color(0xFFEFF2F5),
-    textMuted: Color(0xFFA0A5AC),
-    accent: Color(0xFF2F5FD0), // 286 C 를 밝힌 것 (흰 글자 5.7:1)
+    bg: Color(0xFF101820), // night paper = Pantone Black 6 C
+    surface: Color(0xFF1D252D), // night band = Pantone 433 C
+    line: Color(0xFFDDE5ED),
+    text: Color(0xFFDDE5ED), // Pantone 656 C
+    textMuted: Color(0xFF98A4AE), // Pantone 7543 C
+    accent: Color(0xFF485CC7), // Pantone 2726 C (286 C 는 밤 바탕에 너무 어둡다. 흰 글자 5.8:1)
     onAccent: Color(0xFFFCFEFF),
   );
 

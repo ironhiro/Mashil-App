@@ -172,7 +172,7 @@ class _DoorPainter extends CustomPainter {
 
   static const _blue = MashilColors.doorBg; // Pantone 286 C
   static const _red = MashilColors.signal; // Pantone 485 C 손잡이
-  static const _light = Color(0xFFA9C0F2); // 문 안쪽 빛 (286 C 를 밝힌 것)
+  static const _light = Color(0xFFA7C6ED); // 문 안쪽 빛 (Pantone 2717 C)
   static const _leaf = Color(0xFFFFFFFF);
 
   @override

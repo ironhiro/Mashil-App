@@ -16,8 +16,8 @@ IOS = ROOT / "ios/Runner/Assets.xcassets/AppIcon.appiconset"
 # 둘을 섞지 않고 역할로 나눈다 (docs/07 §2).
 BG = (0x00, 0x33, 0xA0, 255)  # Pantone 286 C
 RED = (0xDA, 0x29, 0x1C, 255)  # Pantone 485 C
-LIGHT = (0xA9, 0xC0, 0xF2, 255)  # 문 안쪽 빛: 286 C 를 밝힌 것
-FLOOR = (0xA9, 0xC0, 0xF2, round(255 * 0.35))
+LIGHT = (0xA7, 0xC6, 0xED, 255)  # 문 안쪽 빛: Pantone 2717 C
+FLOOR = (0xA7, 0xC6, 0xED, round(255 * 0.35))
 WHITE = (255, 255, 255, 255)
 CLEAR = (0, 0, 0, 0)
 SS = 4  # supersampling factor
@@ -150,7 +150,7 @@ def glyph(px_canvas, door_h_px, night, closed=False):
     if night:  # dark launch bg: light frame, white leaf
         c.rect(g["frame"], LIGHT, r=2)
         c.poly(g["leaf"], WHITE)
-    else:  # light launch bg (paper #EDF0F4): blue outlined glyph (흰 문은 밝은 바탕에 묻힌다)
+    else:  # light launch bg (paper 656 C #DDE5ED): blue outlined glyph (흰 문은 밝은 바탕에 묻힌다)
         c.rect((x0 - 1.5, y0 - 1.5, x1 + 1.5, y1 + 1.5), None, r=3.5, outline=BG, width=3)
         c.poly(g["leaf"], BG)
     c.circle(*handle, RED)
