@@ -23,8 +23,7 @@ class SplashGate extends StatefulWidget {
   /// 준비를 기다리는 최대 시간 (첫 프레임부터)
   static const maxWait = Duration(seconds: 6);
 
-  /// 문이 열리는 시간 · 빛이 번지는 시간 · 사라지는 시간
-  static const openDuration = Duration(milliseconds: 650);
+  /// 연출 전체 길이 (문 열림 · 바닥 빛 · 사라짐 구간은 _SplashGateState 의 Interval 이 나눈다)
   static const total = Duration(milliseconds: 1400);
 
   /// 첫 프레임 뒤 문을 열기 전까지 기다리는 시간
@@ -137,7 +136,6 @@ class _SplashGateState extends State<SplashGate>
                           open: _open.transform(_c.value),
                           floor: _floor.transform(_c.value),
                           dark: dark,
-                          bg: bg,
                         ),
                       ),
                     ),
@@ -158,13 +156,11 @@ class _DoorPainter extends CustomPainter {
     required this.open,
     required this.floor,
     required this.dark,
-    required this.bg,
   });
 
   final double open;
   final double floor;
   final bool dark;
-  final Color bg;
 
   /// Android 12 스플래시 아이콘 영역 240dp 안에서 문 높이 110dp (make_icons.py 와 같게)
   static const canvasDp = 240.0;
@@ -231,6 +227,5 @@ class _DoorPainter extends CustomPainter {
   bool shouldRepaint(_DoorPainter old) =>
       old.open != open ||
       old.floor != floor ||
-      old.dark != dark ||
-      old.bg != bg;
+      old.dark != dark;
 }
