@@ -9,6 +9,7 @@ import '../bridge/mashil_js_bridge.dart';
 import '../l10n/app_localizations.dart';
 import '../services/connectivity_service.dart';
 import '../services/external_launcher.dart';
+import '../theme.dart';
 import 'error_screen.dart';
 import 'navigation_policy.dart';
 
@@ -20,12 +21,16 @@ class WebShellScreen extends StatefulWidget {
     required this.bridgeFactory,
     required this.launcher,
     required this.connectivity,
+    this.onFirstShown,
   });
 
   final AppConfig config;
   final MashilJsBridge Function(RunJavaScript runJs, bool Function() isTrusted) bridgeFactory;
   final ExternalLauncher launcher;
   final ConnectivityService connectivity;
+
+  /// 첫 페이지가 다 뜨거나(또는 오류 화면이 뜨면) 한 번 불린다. 시작 연출이 이때까지 문을 닫고 기다린다.
+  final VoidCallback? onFirstShown;
 
   @override
   State<WebShellScreen> createState() => _WebShellScreenState();
@@ -43,6 +48,20 @@ class _WebShellScreenState extends State<WebShellScreen> {
   bool _offline = false;
   String? _loadError;
   DateTime? _lastBackAt;
+  bool _shown = false;
+
+  void _markShown() {
+    if (_shown) return;
+    _shown = true;
+    widget.onFirstShown?.call();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 첫 페이지가 그려지기 전의 웹뷰 바탕을 앱 바탕(paper)과 같게: 흰 화면이 번쩍이지 않도록
+    _controller.setBackgroundColor(MashilColors.of(context).bg);
+  }
 
   @override
   void initState() {
@@ -54,6 +73,7 @@ class _WebShellScreenState extends State<WebShellScreen> {
       if (!mounted) return;
       final wasOffline = _offline;
       setState(() => _offline = !online);
+      if (!online) _markShown();
       if (online && (wasOffline || _loadError != null)) _retry();
     });
   }
@@ -88,15 +108,20 @@ class _WebShellScreenState extends State<WebShellScreen> {
         _currentUrl = Uri.tryParse(url);
         _controller.runJavaScript("window.dispatchEvent(new Event('mashilbridgeready'));");
         if (mounted) setState(() => _firstLoadDone = true);
+        _markShown();
       },
       onWebResourceError: (e) {
         if (e.isForMainFrame != true || !mounted) return;
         setState(() => _loadError = '${e.errorType?.name ?? 'error'} (${e.errorCode})');
+        _markShown();
       },
       onHttpError: (e) {
         // 문서 자체가 5xx 면 오류 화면. 4xx 는 웹이 처리하도록 둔다.
         final code = e.response?.statusCode ?? 0;
-        if (code >= 500 && e.request?.uri == _currentUrl && mounted) setState(() => _loadError = 'HTTP $code');
+        if (code >= 500 && e.request?.uri == _currentUrl && mounted) {
+          setState(() => _loadError = 'HTTP $code');
+          _markShown();
+        }
       },
     ));
     await _controller.loadRequest(widget.config.webBaseUrl);
@@ -148,9 +173,12 @@ class _WebShellScreenState extends State<WebShellScreen> {
           child: Stack(
             children: [
               WebViewWidget(controller: _controller),
-              if (!_firstLoadDone && !showError) const Center(child: CircularProgressIndicator()),
-              if (_firstLoadDone && _progress < 100 && !showError)
-                Align(alignment: Alignment.topCenter, child: LinearProgressIndicator(value: _progress / 100)),
+              // 첫 로드는 보통 시작 연출(닫힌 문) 뒤에서 끝난다. 그보다 늦으면 위쪽 가는 줄만 움직인다.
+              if ((!_firstLoadDone || _progress < 100) && !showError)
+                Align(
+                  alignment: Alignment.topCenter,
+                  child: LinearProgressIndicator(value: _firstLoadDone ? _progress / 100 : null),
+                ),
               if (showError) Positioned.fill(child: ErrorScreen(offline: _offline, detail: _loadError, onRetry: _retry)),
             ],
           ),

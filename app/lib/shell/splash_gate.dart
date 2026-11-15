@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../theme.dart';
@@ -6,12 +9,19 @@ import '../theme.dart';
 ///
 /// 시스템 스플래시(Android 12+ `splash_icon`, 그 전 `launch_icon`)는 같은 위치·크기의 **닫힌 문**을 그린다
 /// (`tool/make_icons.py`). 그래서 Flutter 첫 화면이 그 문을 이어받아 여는 것처럼 보인다.
-/// 웹뷰는 연출 뒤에서 이미 불러오고 있으므로 연출 때문에 늦어지지 않는다.
-/// 기기 설정에서 애니메이션을 줄였으면(`disableAnimations`) 연출 없이 바로 들어간다.
+/// 웹뷰는 연출 뒤에서 이미 불러온다. [ready] 를 주면 문은 그것이 true 가 될 때까지 닫힌 채 기다린다
+/// (첫 페이지가 뜨기 전의 빈 웹뷰가 보이지 않도록). 아무리 늦어도 [maxWait] 뒤에는 연다.
+/// 기기 설정에서 애니메이션을 줄였으면(`disableAnimations`) 준비되는 대로 연출 없이 들어간다.
 class SplashGate extends StatefulWidget {
-  const SplashGate({super.key, required this.child});
+  const SplashGate({super.key, required this.child, this.ready});
 
   final Widget child;
+
+  /// 메인이 보여 줄 준비가 됐는지 (null 이면 처음부터 준비됨)
+  final ValueListenable<bool>? ready;
+
+  /// 준비를 기다리는 최대 시간 (첫 프레임부터)
+  static const maxWait = Duration(seconds: 6);
 
   /// 문이 열리는 시간 · 빛이 번지는 시간 · 사라지는 시간
   static const openDuration = Duration(milliseconds: 650);
@@ -34,6 +44,8 @@ class _SplashGateState extends State<SplashGate>
     duration: SplashGate.total,
   );
   bool _done = false;
+  bool _started = false;
+  final _childKey = GlobalKey();
 
   // 구간 (전체 1.4초 기준): 잠깐 멈춤 → 문 열림 → 바닥 빛 → 멈춤 → 사라짐
   static const _open = Interval(0.12, 0.58, curve: Curves.easeOutCubic);
@@ -43,19 +55,51 @@ class _SplashGateState extends State<SplashGate>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_c.isAnimating || _done) return;
-    if (MediaQuery.maybeDisableAnimationsOf(context) ?? false) {
-      _done = true; // 애니메이션 줄이기: 연출 없이
+    if (_started || _done) return;
+    _started = true;
+    final reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    if (reduceMotion && _isReady) {
+      _done = true; // 애니메이션 줄이기 + 이미 준비됨: 연출 없이
       return;
     }
     // 첫 화면이 실제로 그려지고 시스템 스플래시가 걷힌 뒤에 연다. 바로 시작하면 시작 직후의 버벅임 동안
     // 애니메이션 시간이 흘러가 버려, 문이 열리는 모습 없이 끝나 버린다.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await Future<void>.delayed(SplashGate.startDelay);
+      await Future.wait([
+        Future<void>.delayed(
+          reduceMotion ? Duration.zero : SplashGate.startDelay,
+        ),
+        _whenReady(),
+      ]);
       if (!mounted) return;
+      if (reduceMotion) {
+        setState(() => _done = true);
+        return;
+      }
       _c.forward().whenComplete(() {
         if (mounted) setState(() => _done = true);
       });
+    });
+  }
+
+  bool get _isReady => widget.ready?.value ?? true;
+
+  /// [ready] 가 true 가 되거나 [SplashGate.maxWait] 가 지나면 끝난다.
+  Future<void> _whenReady() {
+    final ready = widget.ready;
+    if (ready == null || ready.value) return Future.value();
+    final done = Completer<void>();
+    void check() {
+      if (ready.value && !done.isCompleted) done.complete();
+    }
+
+    ready.addListener(check);
+    final timer = Timer(SplashGate.maxWait, () {
+      if (!done.isCompleted) done.complete();
+    });
+    return done.future.whenComplete(() {
+      ready.removeListener(check);
+      timer.cancel();
     });
   }
 
@@ -67,40 +111,41 @@ class _SplashGateState extends State<SplashGate>
 
   @override
   Widget build(BuildContext context) {
-    if (_done) return widget.child;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final bg = MashilColors.of(context).bg; // = launch_bg (시스템 스플래시 바탕)
+    // 연출이 끝나도 Stack 모양은 그대로 둔다. child 의 자리가 바뀌면 웹뷰가 새로 만들어져 페이지를 다시 불러온다.
     return Stack(
       fit: StackFit.expand,
       children: [
-        widget.child,
-        AnimatedBuilder(
-          animation: _c,
-          builder: (context, _) {
-            final fade = _fade.transform(_c.value);
-            return IgnorePointer(
-              ignoring: fade > 0.5,
-              child: Opacity(
-                opacity: 1 - fade,
-                child: ColoredBox(
-                  key: SplashGate.overlayKey,
-                  color: bg,
-                  child: Center(
-                    child: CustomPaint(
-                      size: const Size.square(_DoorPainter.canvasDp),
-                      painter: _DoorPainter(
-                        open: _open.transform(_c.value),
-                        floor: _floor.transform(_c.value),
-                        dark: dark,
-                        bg: bg,
+        KeyedSubtree(key: _childKey, child: widget.child),
+        if (!_done)
+          AnimatedBuilder(
+            animation: _c,
+            builder: (context, _) {
+              final fade = _fade.transform(_c.value);
+              return IgnorePointer(
+                ignoring: fade > 0.5,
+                child: Opacity(
+                  opacity: 1 - fade,
+                  child: ColoredBox(
+                    key: SplashGate.overlayKey,
+                    color: bg,
+                    child: Center(
+                      child: CustomPaint(
+                        size: const Size.square(_DoorPainter.canvasDp),
+                        painter: _DoorPainter(
+                          open: _open.transform(_c.value),
+                          floor: _floor.transform(_c.value),
+                          dark: dark,
+                          bg: bg,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            );
-          },
-        ),
+              );
+            },
+          ),
       ],
     );
   }

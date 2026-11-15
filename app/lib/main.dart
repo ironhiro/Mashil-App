@@ -59,7 +59,10 @@ class MashilApp extends StatelessWidget {
     final auth = SocialAuthService(config);
     // 홈(웹뷰)은 한 번만 만들고, 언어가 바뀌면 MaterialApp 만 다시 그린다 (웹뷰를 새로 만들지 않음).
     // 시작 연출(닫힌 문이 열림)은 웹뷰 위에 덮이고, 웹뷰는 그 뒤에서 이미 불러온다.
+    // 첫 페이지가 뜨면 true: 시작 연출은 그때까지 닫힌 문으로 기다린다 (빈 웹뷰가 보이지 않도록)
+    final webShown = ValueNotifier(false);
     final home = SplashGate(
+      ready: webShown,
       child: _VersionGate(
         checker: VersionChecker(config.apiBaseUrl),
         appInfo: appInfo,
@@ -67,6 +70,7 @@ class MashilApp extends StatelessWidget {
           config: config,
           launcher: launcher,
           connectivity: ConnectivityService(),
+          onFirstShown: () => webShown.value = true,
           bridgeFactory: (runJs, isTrusted) => MashilJsBridge(
             runJavaScript: runJs,
             location: location,
