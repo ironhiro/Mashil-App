@@ -1,8 +1,11 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
+import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
 import '../app_config.dart';
 import '../bridge/mashil_js_bridge.dart';
@@ -103,6 +106,7 @@ class _WebShellScreenState extends State<WebShellScreen> {
   Future<void> _setUp(WebViewController c) async {
     final ua = await c.getUserAgent();
     await c.setJavaScriptMode(JavaScriptMode.unrestricted);
+    await _lockDown(c);
     // 웹이 앱 안인지 알 수 있게 UA 끝에 붙인다 (브리지 유무로도 판별 가능)
     await c.setUserAgent('${ua ?? ''} MashilApp/${_bridge.appInfo.version} (${_bridge.appInfo.platform})'.trim());
     await c.addJavaScriptChannel(
@@ -155,6 +159,28 @@ class _WebShellScreenState extends State<WebShellScreen> {
       },
     ));
     await c.loadRequest(widget.config.webBaseUrl);
+  }
+
+  /// 웹 페이지처럼 보이게 하는 웹뷰 기본 동작을 끈다. 텍스트 선택·길게 누르기 메뉴·이미지 끌기·더블탭 확대는
+  /// 웹이 앱 안(UA 의 MashilApp/)일 때 CSS 로 끈다 (Mashil-web src/styles/base.css `html.in-app`).
+  Future<void> _lockDown(WebViewController c) async {
+    // 개발자 도구: 운영(release) 빌드에서는 Chrome(chrome://inspect)·Safari 웹 속성으로 붙을 수 없게. debug·profile 은 열어 둔다.
+    const inspectable = !kReleaseMode;
+    // 손가락 두 개로 페이지 전체 확대 금지. 지도는 자체 터치 처리로 계속 확대·축소된다.
+    await c.enableZoom(false);
+    // 끝까지 스크롤했을 때 페이지가 튕기거나(iOS) 늘어나는(Android) 효과 끔
+    await c.setOverScrollMode(WebViewOverScrollMode.never);
+    final p = c.platform;
+    if (p is AndroidWebViewController) {
+      await AndroidWebViewController.enableDebugging(inspectable);
+      await p.setMediaPlaybackRequiresUserGesture(true);
+    } else if (p is WebKitWebViewController) {
+      await p.setInspectable(inspectable);
+      // 링크를 길게 눌렀을 때 뜨는 미리보기(peek)와 가장자리 스와이프로 웹 history 이동을 끈다.
+      // 뒤로 가기는 웹 화면의 뒤로 버튼으로 한다.
+      await p.setAllowsLinkPreview(false);
+      await p.setAllowsBackForwardNavigationGestures(false);
+    }
   }
 
   Future<void> _retry() async {
