@@ -3,5 +3,5 @@
 <resources>
     <color name="launch_bg">#EDF0F4</color>
     <!-- 앱 아이콘 바탕 (docs/07-ui-design.md §6) -->
-    <color name="ic_launcher_background">#1F6F69</color>
+    <color name="ic_launcher_background">#0033A0</color>
 </resources>

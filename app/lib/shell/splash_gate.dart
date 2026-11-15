@@ -170,8 +170,9 @@ class _DoorPainter extends CustomPainter {
   static const canvasDp = 240.0;
   static const doorDp = 110.0;
 
-  static const _teal = MashilColors.doorBg; // #1F6F69
-  static const _light = Color(0xFF7FE0D3);
+  static const _blue = MashilColors.doorBg; // Pantone 286 C
+  static const _red = MashilColors.signal; // Pantone 485 C 손잡이
+  static const _light = Color(0xFFA9C0F2); // 문 안쪽 빛 (286 C 를 밝힌 것)
   static const _leaf = Color(0xFFFFFFFF);
 
   @override
@@ -199,7 +200,7 @@ class _DoorPainter extends CustomPainter {
         ..lineTo(80, 94)
         ..lineTo(57, 94)
         ..close();
-      final c = dark ? _light : _teal;
+      final c = dark ? _light : _blue;
       canvas.drawPath(
         spill,
         Paint()..color = c.withValues(alpha: (dark ? 0.35 : 0.22) * floor),
@@ -208,22 +209,22 @@ class _DoorPainter extends CustomPainter {
 
     final frame = RRect.fromLTRBR(33, 22, 67, 80, const Radius.circular(2));
     if (dark) {
-      // 어두운 바탕: 문틈으로 민트 빛, 흰 문짝
+      // 어두운 바탕: 문틈으로 옅은 파랑 빛, 흰 문짝
       canvas.drawRRect(frame, Paint()..color = _light);
       canvas.drawPath(leaf, Paint()..color = _leaf);
     } else {
-      // 밝은 바탕: 청록 외곽선 문틀 + 청록 문짝 (흰 문은 밝은 바탕에 묻힌다)
+      // 밝은 바탕: 파랑 외곽선 문틀 + 파랑 문짝 (흰 문은 밝은 바탕에 묻힌다)
       canvas.drawRRect(
         RRect.fromLTRBR(31.5, 20.5, 68.5, 81.5, const Radius.circular(3.5)),
         Paint()
-          ..color = _teal
+          ..color = _blue
           ..style = PaintingStyle.stroke
           ..strokeWidth = 3,
       );
-      canvas.drawPath(leaf, Paint()..color = _teal);
+      canvas.drawPath(leaf, Paint()..color = _blue);
     }
-    // 손잡이 = 바탕이 비쳐 보이는 구멍. 문짝과 함께 움직인다
-    canvas.drawCircle(Offset(right - 5, 53), 2.8, Paint()..color = bg);
+    // 손잡이 = 빨강 점. 문짝과 함께 움직인다
+    canvas.drawCircle(Offset(right - 5, 53), 2.8, Paint()..color = _red);
   }
 
   @override

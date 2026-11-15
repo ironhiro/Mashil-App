@@ -12,9 +12,12 @@ ROOT = Path(__file__).resolve().parent.parent
 RES = ROOT / "android/app/src/main/res"
 IOS = ROOT / "ios/Runner/Assets.xcassets/AppIcon.appiconset"
 
-BG = (0x1F, 0x6F, 0x69, 255)
-LIGHT = (0x7F, 0xE0, 0xD3, 255)
-FLOOR = (0x7F, 0xE0, 0xD3, round(255 * 0.35))
+# Pantone 286 C (남자 화장실 파랑) 바탕, Pantone 485 C (여자 화장실 빨강) 손잡이.
+# 둘을 섞지 않고 역할로 나눈다 (docs/07 §2).
+BG = (0x00, 0x33, 0xA0, 255)  # Pantone 286 C
+RED = (0xDA, 0x29, 0x1C, 255)  # Pantone 485 C
+LIGHT = (0xA9, 0xC0, 0xF2, 255)  # 문 안쪽 빛: 286 C 를 밝힌 것
+FLOOR = (0xA9, 0xC0, 0xF2, round(255 * 0.35))
 WHITE = (255, 255, 255, 255)
 CLEAR = (0, 0, 0, 0)
 SS = 4  # supersampling factor
@@ -86,7 +89,7 @@ def variant(px):
     )
 
 
-def door(c, v, frame_fill=LIGHT, leaf_fill=WHITE, handle_fill=BG, floor=None):
+def door(c, v, frame_fill=LIGHT, leaf_fill=WHITE, handle_fill=RED, floor=None):
     g = v["geom"]
     if floor if floor is not None else v["floor"]:
         c.poly(FLOOR_POLY, FLOOR)
@@ -144,13 +147,13 @@ def glyph(px_canvas, door_h_px, night, closed=False):
     k = door_h_px / (y1 - y0 + 3)
     cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
     c = Canvas(px_canvas, scale=k, ox=px_canvas / 2 - cx * k, oy=px_canvas / 2 - cy * k)
-    if night:  # dark launch bg: original colours, handle shows bg through
+    if night:  # dark launch bg: light frame, white leaf
         c.rect(g["frame"], LIGHT, r=2)
         c.poly(g["leaf"], WHITE)
-    else:  # light launch bg (#E8F2F0): teal outlined glyph for contrast
+    else:  # light launch bg (paper #EDF0F4): blue outlined glyph (흰 문은 밝은 바탕에 묻힌다)
         c.rect((x0 - 1.5, y0 - 1.5, x1 + 1.5, y1 + 1.5), None, r=3.5, outline=BG, width=3)
         c.poly(g["leaf"], BG)
-    c.cut_circle(*handle)
+    c.circle(*handle, RED)
     return c.out()
 
 
