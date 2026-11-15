@@ -176,10 +176,10 @@ class _WebShellScreenState extends State<WebShellScreen> {
       await p.setMediaPlaybackRequiresUserGesture(true);
     } else if (p is WebKitWebViewController) {
       await p.setInspectable(inspectable);
-      // 링크를 길게 눌렀을 때 뜨는 미리보기(peek)와 가장자리 스와이프로 웹 history 이동을 끈다.
-      // 뒤로 가기는 웹 화면의 뒤로 버튼으로 한다.
+      // 링크를 길게 눌렀을 때 뜨는 미리보기(peek)는 끈다.
       await p.setAllowsLinkPreview(false);
-      await p.setAllowsBackForwardNavigationGestures(false);
+      // 왼쪽 가장자리에서 밀어 웹 history 뒤로 가기는 켠다 (iOS 사용자가 기대하는 뒤로 가기. Android 의 뒤로 버튼 역할)
+      await p.setAllowsBackForwardNavigationGestures(true);
     }
   }
 
