@@ -180,7 +180,10 @@ class _WebShellScreenState extends State<WebShellScreen> {
         if (!didPop) _onBack();
       },
       child: Scaffold(
+        // 아래쪽은 웹뷰가 시스템 제스처 막대 밑까지 그린다. 웹이 env(safe-area-inset-bottom) 로 하단 탭과 하단 바를
+        // 그 위로 올린다 (여기서도 띄우면 여백이 두 번 생겨 하단 탭 아래에 빈 띠가 남는다).
         body: SafeArea(
+          bottom: false,
           child: Stack(
             children: [
               WebViewWidget(controller: _controller),
