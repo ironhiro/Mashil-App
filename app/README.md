@@ -76,7 +76,7 @@ iOS 는 `ios/Flutter/Secrets.xcconfig` (gitignore) 에 `KAKAO_NATIVE_APP_KEY=...
 | method | params | 응답 |
 |---|---|---|
 | `getAppInfo` | — | `{ ok, version, platform, providers, language }` |
-| `getLocation` | — | `{ ok, lat, lng, accuracy }` / `{ ok:false, reason: denied·deniedForever·serviceDisabled·timeout }` |
+| `getLocation` | `{ maximumAgeMs?, highAccuracy?, timeoutMs? }` | `{ ok, lat, lng, accuracy, cached }` / `{ ok:false, reason: denied·deniedForever·serviceDisabled·timeout }`. `maximumAgeMs` 안의 마지막 위치면 바로 (`cached: true`) |
 | `openSettings` | — | `{ ok }` |
 | `openDirections` | `{ lat, lng, name }` | `{ ok, app: kakaomap·web }` |
 | `signIn` | `{ provider: kakao·google·apple, nonce }` | `{ ok, provider, idToken?, accessToken?, authorizationCode?, displayName? }` / `{ ok:false, reason: cancelled·failed·busy·unknownProvider }` |
@@ -115,7 +115,7 @@ export async function signInWithApp(provider: 'kakao' | 'google' | 'apple') {
 }
 ```
 
-위치는 `isApp()` 이면 `callNative('getLocation')`, 아니면 `navigator.geolocation` 으로 폴백한다 (APP-03).
+위치는 `isApp()` 이면 `callNative('getLocation')`, 아니면 `navigator.geolocation` 으로 폴백한다 (APP-03). 홈은 먼저 10분 안의 기억된 위치로 지도를 그리고, 그것이 기억값이었으면 뒤에서 정밀하게 다시 재어 30m 넘게 달라졌을 때만 옮긴다.
 
 ## 다국어 (ko / en)
 

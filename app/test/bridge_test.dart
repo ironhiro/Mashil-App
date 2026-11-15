@@ -15,10 +15,22 @@ import 'package:mashil/shell/navigation_policy.dart';
 class FakeLocation implements LocationService {
   PermissionState state = PermissionState.granted;
   LatLng? pos = const LatLng(37.5665, 126.978, accuracy: 12);
+  LatLng? last;
+  Duration? lastMaxAge;
+  ({Duration timeout, bool highAccuracy})? measured;
   @override
   Future<PermissionState> ensurePermission() async => state;
   @override
-  Future<LatLng?> currentPosition({Duration timeout = const Duration(seconds: 12)}) async => pos;
+  Future<LatLng?> lastKnown({required Duration maxAge}) async {
+    lastMaxAge = maxAge;
+    return last;
+  }
+
+  @override
+  Future<LatLng?> currentPosition({Duration timeout = const Duration(seconds: 12), bool highAccuracy = true}) async {
+    measured = (timeout: timeout, highAccuracy: highAccuracy);
+    return pos;
+  }
   @override
   Future<bool> openAppSettings() async => true;
 }
@@ -141,6 +153,28 @@ void main() {
       ..pos = null;
     await b.onMessage(msg('l3', 'getLocation'));
     expect(reply(scripts.last).$2, {'ok': false, 'reason': 'timeout'});
+  });
+
+  test('getLocation: 파라미터가 없으면 예전처럼 정밀하게 12초까지 잰다', () async {
+    location.last = const LatLng(1, 2);
+    await bridge().onMessage(msg('l4', 'getLocation'));
+    expect(reply(scripts.last).$2, containsPair('cached', false));
+    expect(location.lastMaxAge, isNull);
+    expect(location.measured, (timeout: const Duration(seconds: 12), highAccuracy: true));
+  });
+
+  test('getLocation: maximumAgeMs 안의 마지막 위치가 있으면 바로 준다', () async {
+    location.last = const LatLng(37.1, 127.2, accuracy: 30);
+    await bridge().onMessage(msg('l5', 'getLocation', {'maximumAgeMs': 600000}));
+    expect(reply(scripts.last).$2, {'ok': true, 'lat': 37.1, 'lng': 127.2, 'accuracy': 30.0, 'cached': true});
+    expect(location.lastMaxAge, const Duration(minutes: 10));
+    expect(location.measured, isNull);
+  });
+
+  test('getLocation: 마지막 위치가 없으면 요청한 정확도와 시간으로 잰다', () async {
+    await bridge().onMessage(msg('l6', 'getLocation', {'maximumAgeMs': 600000, 'highAccuracy': false, 'timeoutMs': 500}));
+    expect(reply(scripts.last).$2, containsPair('cached', false));
+    expect(location.measured, (timeout: const Duration(seconds: 2), highAccuracy: false));
   });
 
   test('signIn 은 nonce 를 넘기고 자격 증명을 돌려준다', () async {
