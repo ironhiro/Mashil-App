@@ -82,6 +82,13 @@
 		<string>kakaomap</string>
 	</array>
 	<!-- 카카오 로그인 리다이렉트 kakao{네이티브 앱 키} — ios/Flutter/Secrets.xcconfig 의 KAKAO_NATIVE_APP_KEY -->
+	<!-- 개발 중 같은 와이파이의 개발 서버(http://192.168.x.x:5173 등)에 붙기 위해 로컬 네트워크만 http 허용.
+	     인터넷 주소는 그대로 HTTPS 만 (ATS). -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
