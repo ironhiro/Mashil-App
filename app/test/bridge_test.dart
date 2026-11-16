@@ -59,8 +59,8 @@ class FakeLocation implements LocationService {
 class FakeLauncher implements ExternalLauncher {
   final opened = <String>[];
   @override
-  Future<String?> openDirections(double lat, double lng, String name) async {
-    opened.add('$lat,$lng,$name');
+  Future<String?> openDirections(double lat, double lng, String name, {DirectionsMode mode = DirectionsMode.walk}) async {
+    opened.add('$lat,$lng,$name,${mode.name}');
     return 'kakaomap';
   }
 
@@ -259,9 +259,13 @@ void main() {
     final b = bridge();
     await b.onMessage(msg('d1', 'openDirections', {'lat': 37.1, 'lng': '127.2', 'name': '역'}));
     expect(reply(scripts.last).$2, {'ok': true, 'app': 'kakaomap'});
-    expect(launcher.opened.single, '37.1,127.2,역');
+    expect(launcher.opened.single, '37.1,127.2,역,walk'); // mode 가 없으면 도보 (예전 웹)
     await b.onMessage(msg('d2', 'openDirections', {'lat': 'x'}));
     expect(reply(scripts.last).$2, {'ok': false, 'reason': 'invalidParams'});
+    await b.onMessage(msg('d3', 'openDirections', {'lat': 37.1, 'lng': 127.2, 'name': '역', 'mode': 'car'}));
+    expect(launcher.opened.last, '37.1,127.2,역,car');
+    await b.onMessage(msg('d4', 'openDirections', {'lat': 37.1, 'lng': 127.2, 'name': '역', 'mode': 'rocket'}));
+    expect(launcher.opened.last, '37.1,127.2,역,walk'); // 모르는 값은 도보
   });
 
   test('허용되지 않은 페이지·깨진 메시지는 무시, 모르는 메서드는 응답', () async {

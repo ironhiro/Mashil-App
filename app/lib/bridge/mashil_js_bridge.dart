@@ -22,7 +22,7 @@ class AppInfo {
 /// | getAppInfo | — | { ok, version, platform, providers, language } |
 /// | getLocation | { maximumAgeMs?, highAccuracy?, timeoutMs? } | { ok, lat, lng, accuracy, cached } / { ok:false, reason } |
 /// | openSettings | — | { ok } |
-/// | openDirections | { lat, lng, name } | { ok, app } |
+/// | openDirections | { lat, lng, name, mode?: walk·car } | { ok, app } (mode 가 없거나 모르는 값이면 walk) |
 /// | signIn | { provider, nonce } | { ok, provider, idToken?, accessToken?, authorizationCode?, displayName? } / { ok:false, reason } |
 /// | signOut | { provider } | { ok } |
 /// | setLanguage | { language: ko·en } | { ok, language } / { ok:false, reason: unsupportedLanguage } |
@@ -137,7 +137,8 @@ class MashilJsBridge {
       case 'openDirections':
         final lat = _num(m.params['lat']), lng = _num(m.params['lng']);
         if (lat == null || lng == null) return {'ok': false, 'reason': 'invalidParams'};
-        final app = await launcher.openDirections(lat, lng, (m.params['name'] as String?) ?? '목적지');
+        final mode = m.params['mode'] == 'car' ? DirectionsMode.car : DirectionsMode.walk;
+        final app = await launcher.openDirections(lat, lng, (m.params['name'] as String?) ?? '목적지', mode: mode);
         return {'ok': app != null, 'app': app};
 
       case 'signIn':
