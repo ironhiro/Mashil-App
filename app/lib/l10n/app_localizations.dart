@@ -175,6 +175,36 @@ abstract class AppLocalizations {
   /// In ko, this message translates to:
   /// **'업데이트'**
   String get update;
+
+  /// 네이티브 점검 화면 제목 (웹 maintenance.title 과 같게)
+  ///
+  /// In ko, this message translates to:
+  /// **'문이 잠시 닫혔어요'**
+  String get maintenanceTitle;
+
+  /// No description provided for @maintenanceBody.
+  ///
+  /// In ko, this message translates to:
+  /// **'더 나은 마실을 위해 점검하고 있어요.'**
+  String get maintenanceBody;
+
+  /// No description provided for @maintenanceUntil.
+  ///
+  /// In ko, this message translates to:
+  /// **'다시 여는 시각'**
+  String get maintenanceUntil;
+
+  /// No description provided for @maintenanceRetry.
+  ///
+  /// In ko, this message translates to:
+  /// **'다시 확인'**
+  String get maintenanceRetry;
+
+  /// No description provided for @openKakaoMap.
+  ///
+  /// In ko, this message translates to:
+  /// **'카카오맵에서 화장실 찾기'**
+  String get openKakaoMap;
 }
 
 class _AppLocalizationsDelegate

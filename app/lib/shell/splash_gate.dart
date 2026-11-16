@@ -131,8 +131,8 @@ class _SplashGateState extends State<SplashGate>
                     color: bg,
                     child: Center(
                       child: CustomPaint(
-                        size: const Size.square(_DoorPainter.canvasDp),
-                        painter: _DoorPainter(
+                        size: const Size.square(DoorPainter.canvasDp),
+                        painter: DoorPainter(
                           open: _open.transform(_c.value),
                           floor: _floor.transform(_c.value),
                           dark: dark,
@@ -151,8 +151,8 @@ class _SplashGateState extends State<SplashGate>
 
 /// 문 글리프 — `make_icons.py` 의 glyph() 와 같은 100 단위 격자.
 /// open 0 = 닫힘 (문짝이 문틀을 다 덮음), 1 = 열림 (문짝 오른쪽 끝 x55, 위 28, 아래 75).
-class _DoorPainter extends CustomPainter {
-  _DoorPainter({
+class DoorPainter extends CustomPainter {
+  DoorPainter({
     required this.open,
     required this.floor,
     required this.dark,
@@ -224,7 +224,7 @@ class _DoorPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_DoorPainter old) =>
+  bool shouldRepaint(DoorPainter old) =>
       old.open != open ||
       old.floor != floor ||
       old.dark != dark;

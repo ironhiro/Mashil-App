@@ -18,6 +18,17 @@ class ExternalLauncher {
     return await launchUrl(web, mode: LaunchMode.externalApplication) ? 'web' : null;
   }
 
+  /// 점검 중 대안: 카카오맵에서 "화장실" 검색. 앱이 있으면 앱, 없으면 카카오맵 웹
+  Future<bool> openKakaoMapSearch(String query) async {
+    final q = Uri.encodeComponent(query);
+    try {
+      if (await launchUrl(Uri.parse('kakaomap://search?q=$q'), mode: LaunchMode.externalNonBrowserApplication)) return true;
+    } catch (_) {
+      // 앱이 없으면 예외 또는 false
+    }
+    return openExternal(Uri.parse('https://map.kakao.com/?q=$q'));
+  }
+
   Future<bool> openExternal(Uri uri) async {
     try {
       return await launchUrl(uri, mode: LaunchMode.externalApplication);

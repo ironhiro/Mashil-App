@@ -12,5 +12,10 @@
   "updateRequiredBody": "Please update to the latest version to keep using Mashil.",
   "updateAvailableBody": "Get the latest improvements to Mashil.",
   "later": "Later",
-  "update": "Update"
+  "update": "Update",
+  "maintenanceTitle": "We're closed for a moment",
+  "maintenanceBody": "We're doing some maintenance to make Mashil better.",
+  "maintenanceUntil": "Back at",
+  "maintenanceRetry": "Check again",
+  "openKakaoMap": "Find restrooms in KakaoMap"
 }

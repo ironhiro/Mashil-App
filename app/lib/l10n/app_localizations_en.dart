@@ -49,4 +49,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get update => 'Update';
+
+  @override
+  String get maintenanceTitle => 'We\'re closed for a moment';
+
+  @override
+  String get maintenanceBody =>
+      'We\'re doing some maintenance to make Mashil better.';
+
+  @override
+  String get maintenanceUntil => 'Back at';
+
+  @override
+  String get maintenanceRetry => 'Check again';
+
+  @override
+  String get openKakaoMap => 'Find restrooms in KakaoMap';
 }

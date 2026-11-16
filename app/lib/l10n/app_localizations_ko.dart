@@ -47,4 +47,19 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get update => '업데이트';
+
+  @override
+  String get maintenanceTitle => '문이 잠시 닫혔어요';
+
+  @override
+  String get maintenanceBody => '더 나은 마실을 위해 점검하고 있어요.';
+
+  @override
+  String get maintenanceUntil => '다시 여는 시각';
+
+  @override
+  String get maintenanceRetry => '다시 확인';
+
+  @override
+  String get openKakaoMap => '카카오맵에서 화장실 찾기';
 }
