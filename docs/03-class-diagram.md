@@ -738,8 +738,15 @@ classDiagram
         -LocationService location
         -ExternalLauncher launcher
         -SocialAuthService socialAuth
+        -ShareService share
+        -StreamSubscription~LatLng~? watch
+        -int watchGen
         +void onMessage(JavaScriptMessage msg)
         -void reply(String requestId, Map result)
+        -void emit(String event, Map data)
+        +Future~void~ stopWatchingLocation()
+        +void pauseLocationWatch()
+        +void resumeLocationWatch()
     }
     class BridgeMessage {
         <<record>>
@@ -749,8 +756,22 @@ classDiagram
     }
     class LocationService {
         +Future~PermissionState~ ensurePermission()
+        +Future~LatLng?~ lastKnown(Duration maxAge)
         +Future~LatLng?~ currentPosition()
+        +Stream~LatLng~ watch(bool highAccuracy, int distanceFilterM)
         +Future~void~ openAppSettings()
+    }
+    class ShareService {
+        +Future~ShareOutcome~ kakaoTalk(ShareRequest r)
+        +Future~ShareOutcome~ system(ShareRequest r)
+    }
+    class ShareRequest {
+        <<record>>
+        +String title
+        +Uri url
+        +String? description
+        +String? address
+        +String? buttonTitle
     }
     class ExternalLauncher {
         +Future~void~ openDirections(LatLng dest, String name)
@@ -815,6 +836,8 @@ classDiagram
     MashilJsBridge ..> BridgeMessage
     MashilJsBridge --> LocationService
     MashilJsBridge --> ExternalLauncher
+    MashilJsBridge --> ShareService
+    ShareService ..> ShareRequest
     NavigationPolicy --> ExternalLauncher
     LocationService ..> PermissionState
     MashilJsBridge --> SocialAuthService
