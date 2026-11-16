@@ -15,6 +15,7 @@ import 'services/app_language.dart';
 import 'services/connectivity_service.dart';
 import 'services/external_launcher.dart';
 import 'services/location_service.dart';
+import 'services/share_service.dart';
 import 'services/version_checker.dart';
 import 'shell/splash_gate.dart';
 import 'shell/web_shell_screen.dart';
@@ -88,6 +89,8 @@ class MashilApp extends StatelessWidget {
             appInfo: appInfo,
             language: language,
             isTrustedPage: isTrusted,
+            share: ShareService(),
+            shareHosts: config.allowedHosts,
           ),
         ),
       ),

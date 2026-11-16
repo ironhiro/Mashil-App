@@ -835,9 +835,16 @@ classDiagram
 | `getAppInfo` | — | `{ version, platform, providers:["google","kakao","apple"] }` (웹에서 앱 여부와 노출할 로그인 버튼 판별) |
 | `signIn` | `{ provider, nonce }` | `{ ok, provider, idToken?, accessToken?, authorizationCode? }` 또는 `{ ok:false, reason:"cancelled"\|"failed" }` |
 | `signOut` | `{ provider }` | `{ ok }` |
+| `watchLocation` | `{ highAccuracy?, distanceFilterM? }` (기본 true, 3m) | `{ ok }` 또는 `{ ok:false, reason }` (getLocation 과 같은 사유). 이후 위치가 바뀔 때마다 `location` 이벤트. 방향 안내 화면에서만 쓴다 |
+| `stopWatchLocation` | — | `{ ok }` |
+| `share` | `{ target:"kakao"\|"system", title, url, description?, address?, buttonTitle? }` | `{ ok, via:"kakaoTalk"\|"kakaoWeb"\|"shared" }` 또는 `{ ok:false, reason:"dismissed"\|"invalidParams"\|"failed" }`. `kakao` 는 카카오톡 위치 카드(주소가 있으면 "위치 보기" 버튼), 카카오톡이 없으면 카카오 웹 공유. `system` 은 시스템 공유 창. `url` 은 허용 호스트만 |
 
 - 웹에서 앱으로: `window.MashilBridge.postMessage(JSON.stringify({requestId, method, params}))`
 - 앱에서 웹으로: `controller.runJavaScript("window.__mashilBridgeReply(requestId, result)")`
+- 앱에서 웹으로 이벤트 (요청 없이 앱이 먼저): `window.__mashilBridgeEvent(name, data)`
+  - `location`: `{ lat, lng, accuracy, heading? }`
+  - `locationError`: `{ reason }`. 이 뒤로는 이벤트가 오지 않는다
+  - 셸은 문서를 새로 부르면(onPageStarted) 구독을 끊고, 앱이 화면에서 내려가면 쉬었다가 돌아오면 같은 설정으로 다시 붙인다. 백그라운드 위치는 쓰지 않는다 (STO-06)
 - 웹 측에 `src/lib/nativeBridge.ts`를 추가한다. 브리지가 없으면 `navigator.geolocation`으로 폴백한다.
 
 **권장 패키지:** `webview_flutter`, `geolocator`, `permission_handler`, `url_launcher`, `connectivity_plus`, `package_info_plus`, `google_sign_in`, `kakao_flutter_sdk_user`, `sign_in_with_apple`
