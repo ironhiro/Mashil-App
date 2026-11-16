@@ -1,12 +1,16 @@
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 
 enum PermissionState { granted, denied, deniedForever, serviceDisabled }
 
 class LatLng {
-  const LatLng(this.lat, this.lng, {this.accuracy});
+  const LatLng(this.lat, this.lng, {this.accuracy, this.heading});
   final double lat;
   final double lng;
   final double? accuracy;
+
+  /// 진행 방향 (도, 북쪽 0 시계방향). 움직이지 않거나 모르면 null.
+  final double? heading;
 }
 
 /// 위치 권한과 현재 위치 (APP-02, APP-03). 백그라운드 위치는 쓰지 않는다 (STO-06).
@@ -51,6 +55,34 @@ class LocationService {
       final last = await Geolocator.getLastKnownPosition();
       return last == null ? null : LatLng(last.latitude, last.longitude, accuracy: last.accuracy);
     }
+  }
+
+  /// 위치가 [distanceFilterM] 이상 바뀔 때마다 알려 준다 (방향 안내 화면). 구독을 끊으면 GPS 도 멈춘다.
+  /// 앱이 화면에 떠 있을 때만 쓴다: 백그라운드 위치 권한은 받지 않는다 (STO-06).
+  Stream<LatLng> watch({bool highAccuracy = true, int distanceFilterM = 3}) {
+    final accuracy = highAccuracy ? LocationAccuracy.best : LocationAccuracy.medium;
+    // 걷는 동안 따라가므로 자주 받는다. Android 기본 간격(5초)이면 걸음이 화면에 늦게 따라온다
+    final LocationSettings settings = switch (defaultTargetPlatform) {
+      TargetPlatform.android => AndroidSettings(
+          accuracy: accuracy,
+          distanceFilter: distanceFilterM,
+          intervalDuration: const Duration(seconds: 1),
+        ),
+      TargetPlatform.iOS => AppleSettings(
+          accuracy: accuracy,
+          distanceFilter: distanceFilterM,
+          activityType: ActivityType.fitness,
+          pauseLocationUpdatesAutomatically: false,
+        ),
+      _ => LocationSettings(accuracy: accuracy, distanceFilter: distanceFilterM),
+    };
+    return Geolocator.getPositionStream(locationSettings: settings).map((p) => LatLng(
+          p.latitude,
+          p.longitude,
+          accuracy: p.accuracy,
+          // geolocator 는 모를 때 0 이나 음수를 준다
+          heading: p.heading > 0 && p.speed > 0.3 ? p.heading : null,
+        ));
   }
 
   /// "다시 묻지 않음" 상태에서 설정 앱으로 보낸다.

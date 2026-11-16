@@ -49,6 +49,11 @@ class _WebShellScreenState extends State<WebShellScreen> {
     () => _policy.isTrusted(_currentUrl),
   );
   StreamSubscription<bool>? _online;
+  // 앱이 화면에서 내려가면 방향 안내의 위치 따라가기(GPS)를 쉬게 한다
+  late final AppLifecycleListener _lifecycle = AppLifecycleListener(
+    onHide: _bridge.pauseLocationWatch,
+    onShow: _bridge.resumeLocationWatch,
+  );
 
   Uri? _currentUrl;
   int _progress = 0;
@@ -77,6 +82,7 @@ class _WebShellScreenState extends State<WebShellScreen> {
   @override
   void initState() {
     super.initState();
+    _lifecycle; // late final: 여기서 붙인다
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       // 첫 프레임이 실제로 화면에 올라가 시스템 스플래시가 걷힐 때까지 기다린다. 그 전환도 메인 스레드에서 일어나서,
       // 너무 일찍(50ms) 만들면 전환이 웹뷰 생성 뒤로 밀린다. 문은 페이지가 뜰 때까지 닫혀 있으므로 이 지연은 보이지 않는다.
@@ -130,6 +136,8 @@ class _WebShellScreenState extends State<WebShellScreen> {
       onUrlChange: (c) => _currentUrl = c.url == null ? _currentUrl : Uri.tryParse(c.url!),
       onPageStarted: (url) {
         _currentUrl = Uri.tryParse(url);
+        // 문서를 새로 부르면 이전 페이지의 위치 구독자는 사라진다 (새로고침 등). GPS 를 끈다
+        unawaited(_bridge.stopWatchingLocation());
         if (mounted) setState(() => _documentLoading = true);
       },
       onProgress: (p) => mounted ? setState(() => _progress = p) : null,
@@ -216,6 +224,8 @@ class _WebShellScreenState extends State<WebShellScreen> {
   @override
   void dispose() {
     _online?.cancel();
+    _lifecycle.dispose();
+    _bridge.dispose();
     super.dispose();
   }
 
