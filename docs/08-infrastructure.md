@@ -155,6 +155,7 @@ flowchart LR
 |---|---|---|
 | 공공데이터 원본·정규화 결과 (`raw_toilet_records`, `toilets` 기본 필드, `opening_schedules`) | **예** — LOCALDATA에서 다시 받아 임포트 (약 20초) | 백업에 포함하되 필수는 아님 |
 | 지오코딩 결과 (`geocode_cache`, 지오코딩 오버라이드) | 예, 하지만 API 호출 약 5만 건(하루 한도 내) 필요 | 백업 필수 |
+| 도보 도로망 (`walk_edges`, 약 371만 행) | **예** — OSM 추출본(약 280MB)과 서울시 도보 네트워크(Open API)로 `tools/Mashil.OsmImport --seoul` 약 4분 | 백업에서 빼도 된다 (용량이 커서 덤프에서 제외 검토) |
 | **사용자 데이터** (계정, 평점, 댓글, 신고, 변경 요청) | **아니오** | 매일 백업, 복구 훈련 |
 | **관리자 작업** (관리자 오버라이드, 매핑 사전, 이슈 처리 이력) | **아니오** | 매일 백업 |
 
@@ -195,3 +196,4 @@ flowchart LR
 - [x] `/healthz`(liveness)와 `/healthz/ready`(readiness, DB 확인) 분리
 - [ ] 점검 모드 `status.json` 정적 폴백 경로
 - [x] 위치 쿼리 로그 마스킹 (NFR-06) — Caddy 접근 로그에서 `lat`·`lng`·bbox 쿼리 제거
+- [ ] 도보 도로망 적재: 운영 DB 에 마이그레이션(P8) 뒤 `dotnet run --project tools/Mashil.OsmImport -- --pbf <south-korea-latest.osm.pbf> --seoul` (같은 폴더에 `.md5`, 서울 Open API 키는 `SeoulOpenData__ApiKey` 환경 변수나 사용자 비밀). 메모리 수 GB 를 쓰므로 운영 서버가 아니라 작업용 PC 나 CI 에서 돌려 DB 에 넣는다. 월 1회 정도 갱신. 경로 API 는 위치를 본문(POST)으로 받으므로 접근 로그 마스킹 대상이 아니다
