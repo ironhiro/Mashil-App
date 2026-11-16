@@ -854,7 +854,7 @@ classDiagram
 |---|---|---|
 | `getLocation` | `{ maximumAgeMs?, highAccuracy?, timeoutMs? }` | `{ ok, lat, lng, accuracy, cached }` 또는 `{ ok:false, reason:"denied"\|"deniedForever"\|"serviceDisabled"\|"timeout" }`. `maximumAgeMs` 안의 마지막 위치가 있으면 새로 재지 않고 바로 준다 (`cached: true`). 파라미터가 없으면 정밀 측정, 12초까지 |
 | `openSettings` | — | `{ ok }` |
-| `openDirections` | `{ lat, lng, name }` | `{ ok, app:"kakaomap"\|"web" }` |
+| `openDirections` | `{ lat, lng, name, mode?: "walk"\|"car" }` | `{ ok, app:"kakaomap"\|"web" }`. 카카오맵 앱 `by=FOOT` / `by=CAR` (mode 가 없으면 도보) |
 | `getAppInfo` | — | `{ version, platform, providers:["google","kakao","apple"] }` (웹에서 앱 여부와 노출할 로그인 버튼 판별) |
 | `signIn` | `{ provider, nonce }` | `{ ok, provider, idToken?, accessToken?, authorizationCode? }` 또는 `{ ok:false, reason:"cancelled"\|"failed" }` |
 | `signOut` | `{ provider }` | `{ ok }` |
