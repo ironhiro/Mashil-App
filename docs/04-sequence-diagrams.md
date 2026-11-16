@@ -16,6 +16,8 @@
 | SD-12 | 일일 자동 갱신 (다운로드, 사전 검증, 무중단 반영) | DATA-15, DATA-18~23 |
 | SD-13 | 무중단 배포 | OPS-01~04, OPS-06 |
 | SD-14 | 점검 모드 | OPS-05, ADM-06 |
+| SD-15 | 앱 안 방향 안내 (위치 따라가기) | APP-13 |
+| SD-16 | 공유 (카카오톡, 다른 앱, 링크 복사) | APP-10 |
 
 > SD-04는 정규화 처리 자체(행 단위)를 보여주고, SD-12는 그 바깥의 일일 실행 흐름(락, 다운로드, 검증, 누락 처리, 알림)을 보여준다.
 
@@ -330,13 +332,14 @@ sequenceDiagram
     participant V as IIdTokenVerifier
     participant IdP as IdP (Google/Kakao/Apple)
 
-    U->>Web: 설정에서 "계정 삭제"
-    Web-->>U: 확인 다이얼로그 (삭제되는 정보 안내)
+    U->>Web: 설정에서 "회원 탈퇴"
+    Web-->>U: 경고창 "정말 탈퇴하시겠어요?" (지워지는 것·남는 것)
     U->>Web: 확인
     Note over Web,Br: 비밀번호 대신 가입한 IdP로 재인증
     Web->>Br: signIn(provider, nonce)
     Br-->>Web: idToken / accessToken / authorizationCode
-    Web->>API: DELETE /api/auth/me (provider, credential, nonce)
+    Web->>API: POST /api/auth/me/withdraw (provider, credential, nonce)
+    Note over Web,API: 본문이 있는 DELETE 는 중간 장비가 본문을 버릴 수 있어 POST.<br/>예전 DELETE /api/auth/me 도 이전 앱용으로 같은 처리
     API->>AS: DeleteAccountAsync(userId, provider, credential)
     AS->>V: VerifyAsync(credential, nonce)
     V-->>AS: VerifiedIdentity(subject)
@@ -627,5 +630,85 @@ sequenceDiagram
         API-->>U: 503 (읽기 전용)
     else 정상
         App-->>U: 정상 화면
+    end
+```
+
+## SD-15. 앱 안 방향 안내 (위치 따라가기)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as 사용자
+    participant Web as Mashil-web (방향 안내)
+    participant Br as MashilJsBridge
+    participant L as LocationService
+    participant OS as OS 위치
+
+    U->>Web: 상세·카드에서 "방향 안내"
+    Web->>Br: watchLocation(highAccuracy, distanceFilterM=3)
+    Note over Br: 요청 번호(watchGen)를 올린다
+    Br->>L: ensurePermission()
+    alt 권한을 묻는 동안 stop 이나 새 watch 가 옴
+        Br-->>Web: { ok:false, reason: cancelled } (구독하지 않음)
+    else 거부
+        Br-->>Web: { ok:false, reason: denied }
+    else 허용
+        Br->>L: watch() (앞 구독을 끊고 나서 붙인다)
+        L->>OS: 위치 요청 (Android 1초 간격)
+        Br-->>Web: { ok:true }
+        loop 위치가 3m 이상 바뀔 때마다
+            OS-->>L: 위치
+            L-->>Br: LatLng(lat, lng, accuracy, heading?)
+            Br-->>Web: __mashilBridgeEvent('location', …)
+            Web-->>U: 점선 직선, 지나온 길, 약 n분 / 직선 거리·방향
+        end
+    end
+    opt 앱이 화면에서 내려감
+        Br->>L: 구독 끊기 (GPS 쉼)
+        Note over Br,L: 돌아오면 같은 설정으로 다시 붙인다
+    end
+    alt 20m 안에 들어옴
+        Web-->>U: "다 왔어요"
+        Web->>Br: stopWatchLocation()
+    else 사용자가 "안내 끝내기" / 화면을 떠남
+        Web->>Br: stopWatchLocation()
+    end
+    Br->>L: 구독 끊기 (GPS 끔)
+```
+
+## SD-16. 공유
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as 사용자
+    participant Web as Mashil-web (공유 시트)
+    participant Br as MashilJsBridge
+    participant S as ShareService
+    participant K as 카카오 공유 API
+    participant OS as OS
+
+    U->>Web: 상세·카드의 공유 단추
+    Web-->>U: 시트: 카카오톡으로 보내기 / 다른 앱으로 공유 / 링크 복사
+    alt 카카오톡으로 보내기 (앱)
+        Web->>Br: share(target=kakao, title, url, description, address)
+        Note over Br: url 호스트가 허용 호스트가 아니면 invalidParams
+        Br->>S: kakaoTalk(위치 템플릿)
+        S->>K: 기본 템플릿 검증 (링크 도메인은 제품 링크 관리 등록분만)
+        alt 카카오톡 설치됨
+            S->>OS: 카카오톡 열기
+        else 미설치
+            S->>OS: 카카오 웹 공유 화면 (외부 브라우저)
+        end
+        Br-->>Web: { ok, via }
+    else 다른 앱으로 공유 (앱)
+        Web->>Br: share(target=system, …)
+        Br->>S: system()
+        S->>OS: 시스템 공유 창
+        Br-->>Web: { ok } / { ok:false, reason: dismissed }
+    else 브라우저
+        Web->>K: Kakao JS SDK Share.sendDefault (또는 navigator.share)
+    else 링크 복사
+        Web-->>U: "링크를 복사했어요"
     end
 ```
