@@ -14,6 +14,7 @@ import '../services/app_status.dart';
 import '../services/connectivity_service.dart';
 import '../services/external_launcher.dart';
 import '../theme.dart';
+import 'deep_links.dart';
 import 'error_screen.dart';
 import 'maintenance_screen.dart';
 import 'navigation_policy.dart';
@@ -26,6 +27,7 @@ class WebShellScreen extends StatefulWidget {
     required this.bridgeFactory,
     required this.launcher,
     required this.connectivity,
+    this.deepLinks,
     this.onFirstShown,
   });
 
@@ -33,6 +35,9 @@ class WebShellScreen extends StatefulWidget {
   final MashilJsBridge Function(RunJavaScript runJs, bool Function() isTrusted) bridgeFactory;
   final ExternalLauncher launcher;
   final ConnectivityService connectivity;
+
+  /// 공유 링크로 열린 주소 (없으면 늘 [AppConfig.webBaseUrl] 부터)
+  final DeepLinks? deepLinks;
 
   /// 첫 페이지가 다 뜨거나(또는 오류 화면이 뜨면) 한 번 불린다. 시작 연출이 이때까지 문을 닫고 기다린다.
   final VoidCallback? onFirstShown;
@@ -51,6 +56,7 @@ class _WebShellScreenState extends State<WebShellScreen> {
     () => _policy.isTrusted(_currentUrl),
   );
   StreamSubscription<bool>? _online;
+  StreamSubscription<Uri>? _links;
   // 앱이 화면에서 내려가면 방향 안내의 위치 따라가기(GPS)를 쉬게 한다
   late final AppLifecycleListener _lifecycle = AppLifecycleListener(
     onHide: _bridge.pauseLocationWatch,
@@ -60,6 +66,8 @@ class _WebShellScreenState extends State<WebShellScreen> {
   Uri? _currentUrl;
   int _progress = 0;
   bool _firstLoadDone = false;
+  // 첫 주소를 불렀는지 (그 전에 온 공유 링크는 첫 주소로 쓴다)
+  bool _initialRequested = false;
   // 문서를 새로 불러오는 중인지 (onPageStarted ~ onPageFinished). SPA 화면 전환(pushState)과 지도 타일·API 같은
   // 하위 리소스도 onProgress 를 올리므로, 진행 막대는 이 동안에만 보인다.
   bool _documentLoading = false;
@@ -105,6 +113,17 @@ class _WebShellScreenState extends State<WebShellScreen> {
         setState(() => _loadError = 'setup ($e)');
         _markShown();
       }
+    });
+    // 앱이 켜져 있을 때 공유 링크를 누르면 그 화장실로. 웹뷰를 만드는 중이면 _setUp 이 takePending 으로 연다
+    _links = widget.deepLinks?.links.listen((uri) {
+      final c = _controller;
+      if (c == null || !_initialRequested) return;
+      widget.deepLinks?.takePending();
+      setState(() {
+        _loadError = null;
+        _maintenance = null;
+      });
+      unawaited(c.loadRequest(uri));
     });
     _online = widget.connectivity.onlineStream.listen((online) {
       if (!mounted) return;
@@ -174,7 +193,9 @@ class _WebShellScreenState extends State<WebShellScreen> {
         }
       },
     ));
-    await c.loadRequest(widget.config.webBaseUrl);
+    // 링크가 이 직전에 왔으면 pending 에 남아 있다: 여기서 꺼내 연다. 이 뒤로 오는 링크는 _links 가 연다
+    _initialRequested = true;
+    await c.loadRequest(widget.deepLinks?.takePending() ?? widget.config.webBaseUrl);
   }
 
   /// 웹 페이지처럼 보이게 하는 웹뷰 기본 동작을 끈다. 텍스트 선택·길게 누르기 메뉴·이미지 끌기·더블탭 확대는
@@ -256,6 +277,7 @@ class _WebShellScreenState extends State<WebShellScreen> {
   @override
   void dispose() {
     _online?.cancel();
+    _links?.cancel();
     _lifecycle.dispose();
     _bridge.dispose();
     super.dispose();

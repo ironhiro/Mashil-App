@@ -17,6 +17,7 @@ import 'services/external_launcher.dart';
 import 'services/location_service.dart';
 import 'services/share_service.dart';
 import 'services/version_checker.dart';
+import 'shell/deep_links.dart';
 import 'shell/splash_gate.dart';
 import 'shell/web_shell_screen.dart';
 import 'theme.dart';
@@ -24,6 +25,12 @@ import 'theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final config = AppConfig.fromEnvironment();
+  // 공유 링크로 열렸을 때 (App Links). MaterialApp 보다 먼저 붙여야 링크가 앱 Navigator 로 가지 않는다
+  final deepLinks = DeepLinks(
+    config.webBaseUrl,
+    initialRoute: WidgetsBinding.instance.platformDispatcher.defaultRouteName,
+  );
+  WidgetsBinding.instance.addObserver(deepLinks);
   // 카카오 SDK 초기화는 에뮬레이터에서 0.7초쯤 걸린다. 첫 화면을 그 뒤로 미루지 않고 뒤에서 돌리고,
   // 카카오 로그인·로그아웃 직전에만 기다린다 (SocialAuthService).
   final kakaoReady = config.kakaoNativeAppKey == null
@@ -36,6 +43,7 @@ Future<void> main() async {
   runApp(
     MashilApp(
       config: config,
+      deepLinks: deepLinks,
       kakaoReady: kakaoReady,
       language: language,
       appInfo: AppInfo(
@@ -50,12 +58,14 @@ class MashilApp extends StatelessWidget {
   const MashilApp({
     super.key,
     required this.config,
+    required this.deepLinks,
     required this.appInfo,
     required this.language,
     this.kakaoReady,
   });
 
   final AppConfig config;
+  final DeepLinks deepLinks;
 
   /// 카카오 SDK 초기화 (키가 없으면 null)
   final Future<void>? kakaoReady;
@@ -78,6 +88,7 @@ class MashilApp extends StatelessWidget {
         appInfo: appInfo,
         child: WebShellScreen(
           config: config,
+          deepLinks: deepLinks,
           launcher: launcher,
           connectivity: ConnectivityService(),
           onFirstShown: () => webShown.value = true,
@@ -112,6 +123,8 @@ class MashilApp extends StatelessWidget {
         theme: mashilTheme(Brightness.light),
         darkTheme: mashilTheme(Brightness.dark),
         home: home,
+        // 링크로 켜지면 시작 경로가 /toilets/12 처럼 온다. 앱 화면은 하나뿐이니 늘 홈 (주소는 웹뷰가 연다, DeepLinks)
+        onGenerateInitialRoutes: (_) => [MaterialPageRoute<void>(builder: (_) => home!)],
       ),
     );
   }

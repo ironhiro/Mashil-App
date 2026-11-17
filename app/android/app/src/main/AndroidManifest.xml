@@ -29,6 +29,14 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- 공유 링크 https://{웹 호스트}/toilets/{id} 를 앱으로 (App Links). 호스트는 build.gradle.kts 의 appLinkHost.
+                 주소는 Flutter 딥링크로 받아 웹뷰가 연다 (lib/shell/deep_links.dart) -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="${appLinkHost}" android:pathPrefix="/toilets/" />
+            </intent-filter>
         </activity>
         <!-- 카카오 로그인 리다이렉트 (kakao{네이티브 앱 키}://oauth). 키는 빌드 시 dart-define 에서 주입 -->
         <activity
