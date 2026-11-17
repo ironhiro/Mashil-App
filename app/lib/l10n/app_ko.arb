@@ -13,5 +13,11 @@
   "updateRequiredBody": "계속 사용하려면 최신 버전으로 업데이트해 주세요.",
   "updateAvailableBody": "더 나아진 마실을 만나 보세요.",
   "later": "나중에",
-  "update": "업데이트"
+  "update": "업데이트",
+  "maintenanceTitle": "문이 잠시 닫혔어요",
+  "@maintenanceTitle": {"description": "네이티브 점검 화면 제목 (웹 maintenance.title 과 같게)"},
+  "maintenanceBody": "더 나은 마실을 위해 점검하고 있어요.",
+  "maintenanceUntil": "다시 여는 시각",
+  "maintenanceRetry": "다시 확인",
+  "openKakaoMap": "카카오맵에서 화장실 찾기"
 }

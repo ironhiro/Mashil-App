@@ -66,6 +66,9 @@ class FakeLauncher implements ExternalLauncher {
 
   @override
   Future<bool> openExternal(Uri uri) async => true;
+
+  @override
+  Future<bool> openKakaoMapSearch(String query) async => true;
 }
 
 class FakeShare implements ShareService {

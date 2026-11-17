@@ -10,10 +10,12 @@ import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import '../app_config.dart';
 import '../bridge/mashil_js_bridge.dart';
 import '../l10n/app_localizations.dart';
+import '../services/app_status.dart';
 import '../services/connectivity_service.dart';
 import '../services/external_launcher.dart';
 import '../theme.dart';
 import 'error_screen.dart';
+import 'maintenance_screen.dart';
 import 'navigation_policy.dart';
 
 /// 웹(Mashil-web)을 띄우는 화면 (APP-01, 05~08). 저장소(localStorage·쿠키)는 웹뷰 기본값대로 유지된다 (APP-08).
@@ -63,6 +65,10 @@ class _WebShellScreenState extends State<WebShellScreen> {
   bool _documentLoading = false;
   bool _offline = false;
   String? _loadError;
+  // 웹을 불러오지 못했는데 서버가 점검 중이면 네이티브 점검 화면 (웹이 뜨면 웹이 자기 점검 화면을 그린다)
+  late final _statusClient = AppStatusClient(widget.config.apiBaseUrl);
+  AppStatus? _maintenance;
+  bool _checkingStatus = false;
   DateTime? _lastBackAt;
   bool _shown = false;
 
@@ -156,6 +162,7 @@ class _WebShellScreenState extends State<WebShellScreen> {
         if (e.isForMainFrame != true || !mounted) return;
         setState(() => _loadError = '${e.errorType?.name ?? 'error'} (${e.errorCode})');
         _markShown();
+        unawaited(_checkMaintenance(null));
       },
       onHttpError: (e) {
         // 문서 자체가 5xx 면 오류 화면. 4xx 는 웹이 처리하도록 둔다.
@@ -163,6 +170,7 @@ class _WebShellScreenState extends State<WebShellScreen> {
         if (code >= 500 && e.request?.uri == _currentUrl && mounted) {
           setState(() => _loadError = 'HTTP $code');
           _markShown();
+          unawaited(_checkMaintenance(code));
         }
       },
     ));
@@ -191,10 +199,34 @@ class _WebShellScreenState extends State<WebShellScreen> {
     }
   }
 
+  /// 문서를 못 불러왔을 때 점검 중인지 서버에 묻는다. 오프라인이면 묻지 않는다 (오프라인 화면이 먼저)
+  Future<void> _checkMaintenance(int? httpCode) async {
+    if (_offline) return;
+    final s = await _statusClient.fetch();
+    if (!mounted || _loadError == null) return; // 그새 다시 불러와 떴으면 그대로
+    setState(() => _maintenance = AppStatus.maintenanceFor(s, httpCode));
+  }
+
   Future<void> _retry() async {
     final c = _controller;
     if (c == null) return; // 아직 만드는 중: 만들고 나면 알아서 첫 페이지를 부른다
-    setState(() => _loadError = null);
+    if (_maintenance != null) {
+      // 점검 화면의 "다시 확인": 아직 점검이면 화면을 그대로 두고 시각·안내만 새로
+      setState(() => _checkingStatus = true);
+      final s = await _statusClient.fetch();
+      if (!mounted) return;
+      final still = s == null ? _maintenance : (s.maintenance ? s : null);
+      setState(() {
+        _checkingStatus = false;
+        _maintenance = still;
+      });
+      if (still != null && s != null) return;
+      // 상태를 못 받았으면(서버가 아직 내려가 있음) 웹을 다시 불러 본다. 503 이면 다시 점검 화면이 된다
+    }
+    setState(() {
+      _loadError = null;
+      _maintenance = null;
+    });
     if (_currentUrl != null && _firstLoadDone) {
       await c.reload();
     } else {
@@ -255,7 +287,17 @@ class _WebShellScreenState extends State<WebShellScreen> {
                   alignment: Alignment.topCenter,
                   child: LinearProgressIndicator(value: _firstLoadDone ? _progress / 100 : null),
                 ),
-              if (showError) Positioned.fill(child: ErrorScreen(offline: _offline, detail: _loadError, onRetry: _retry)),
+              if (showError)
+                Positioned.fill(
+                  child: !_offline && _maintenance != null
+                      ? MaintenanceScreen(
+                          status: _maintenance!,
+                          retrying: _checkingStatus,
+                          onRetry: _retry,
+                          onOpenKakaoMap: () => widget.launcher.openKakaoMapSearch('화장실'),
+                        )
+                      : ErrorScreen(offline: _offline, detail: _loadError, onRetry: _retry),
+                ),
             ],
           ),
         ),
