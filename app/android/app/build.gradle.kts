@@ -1,3 +1,4 @@
+import java.net.URI
 import java.util.Base64
 
 // flutter run/build --dart-define-from-file=env/dev.json 의 값은 Gradle 에 "dart-defines" (base64, 쉼표 구분) 로 들어온다
@@ -40,6 +41,10 @@ android {
         versionName = flutter.versionName
         // 카카오 로그인 리다이렉트 스킴 kakao{네이티브 앱 키}
         manifestPlaceholders["kakaoNativeAppKey"] = dartDefines["KAKAO_NATIVE_APP_KEY"] ?: "MISSING_KAKAO_KEY"
+        // 공유 링크(App Links)를 받을 호스트 = 웹 주소의 호스트 (staging: toilets-dev, prod: toilets).
+        // 서버가 /.well-known/assetlinks.json 으로 이 앱의 서명 인증서를 밝혀야 확인된다 (백엔드 docs/APP-LINKS.md)
+        manifestPlaceholders["appLinkHost"] =
+            runCatching { URI(dartDefines["WEB_BASE_URL"] ?: "").host }.getOrNull() ?: "toilets.ironhiro.dev"
     }
 
     buildTypes {
