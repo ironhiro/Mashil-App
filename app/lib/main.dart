@@ -122,9 +122,10 @@ class MashilApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: mashilTheme(Brightness.light),
         darkTheme: mashilTheme(Brightness.dark),
-        home: home,
-        // 링크로 켜지면 시작 경로가 /toilets/12 처럼 온다. 앱 화면은 하나뿐이니 늘 홈 (주소는 웹뷰가 연다, DeepLinks)
+        // 링크로 켜지면 시작 경로가 /toilets/12 처럼 온다. 앱 화면은 하나뿐이니 늘 홈 (주소는 웹뷰가 연다, DeepLinks).
+        // home 과 onGenerateInitialRoutes 는 같이 줄 수 없다 (Flutter assert) → 홈은 onGenerateRoute 로
         onGenerateInitialRoutes: (_) => [MaterialPageRoute<void>(builder: (_) => home!)],
+        onGenerateRoute: (_) => MaterialPageRoute<void>(builder: (_) => home!),
       ),
     );
   }
