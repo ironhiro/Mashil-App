@@ -1,0 +1,21 @@
+{
+  "@@locale": "zh",
+  "appTitle": "Mashil",
+  "offlineTitle": "未连接到网络",
+  "loadFailedTitle": "页面加载失败",
+  "offlineBody": "连接后将自动重新加载。",
+  "loadFailedBody": "请稍后再试。",
+  "retry": "重试",
+  "pressBackAgainToExit": "再按一次退出",
+  "updateRequiredTitle": "需要更新",
+  "updateAvailableTitle": "有新版本",
+  "updateRequiredBody": "请更新到最新版本以继续使用 Mashil。",
+  "updateAvailableBody": "快来体验更好用的 Mashil。",
+  "later": "以后再说",
+  "update": "更新",
+  "maintenanceTitle": "暂时维护中",
+  "maintenanceBody": "我们正在维护，让 Mashil 变得更好。",
+  "maintenanceUntil": "预计恢复时间",
+  "maintenanceRetry": "再次检查",
+  "openKakaoMap": "在 KakaoMap 中查找卫生间"
+}

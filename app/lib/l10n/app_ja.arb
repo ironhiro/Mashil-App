@@ -1,0 +1,21 @@
+{
+  "@@locale": "ja",
+  "appTitle": "Mashil",
+  "offlineTitle": "インターネットに接続されていません",
+  "loadFailedTitle": "画面を読み込めませんでした",
+  "offlineBody": "接続されると自動的に再読み込みします。",
+  "loadFailedBody": "しばらくしてからもう一度お試しください。",
+  "retry": "再試行",
+  "pressBackAgainToExit": "もう一度押すと終了します",
+  "updateRequiredTitle": "アップデートが必要です",
+  "updateAvailableTitle": "新しいバージョンがあります",
+  "updateRequiredBody": "引き続きご利用いただくには、最新バージョンにアップデートしてください。",
+  "updateAvailableBody": "より使いやすくなったMashilをお試しください。",
+  "later": "あとで",
+  "update": "アップデート",
+  "maintenanceTitle": "ただいまメンテナンス中です",
+  "maintenanceBody": "Mashilをより良くするためにメンテナンスしています。",
+  "maintenanceUntil": "再開予定",
+  "maintenanceRetry": "もう一度確認",
+  "openKakaoMap": "KakaoMapでトイレを探す"
+}

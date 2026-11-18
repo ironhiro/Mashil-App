@@ -119,6 +119,8 @@ class MashilApp extends StatelessWidget {
           GlobalWidgetsLocalizations.delegate,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
+        // 대만·홍콩 기기(zh-TW)가 간체로 가지 않게 중국어는 글자 체계로 고른다
+        localeListResolutionCallback: (device, supported) => AppLanguage.resolve(device, supported),
         debugShowCheckedModeBanner: false,
         theme: mashilTheme(Brightness.light),
         darkTheme: mashilTheme(Brightness.dark),
