@@ -61,6 +61,8 @@
 
 ## 개발 환경
 
+빌드 환경 설정은 `app/env/*.json` (커밋하지 않음, 형식은 `env/example.json`): `dev.json` (에뮬레이터 → PC 개발 서버), `staging.json` (`https://toilets-dev.ironhiro.dev`), `prod.json` (`https://toilets.ironhiro.dev`). 예: `flutter build apk --dart-define-from-file=env/prod.json`.
+
 Flutter **3.47 이상** (개발·CI 는 3.50.0, Dart 3.14). 그보다 낮으면 `flutter pub get` 이 "Flutter SDK version" 오류로 멈춘다. `flutter upgrade` 로 올리고, iOS 는 그다음 `cd app/ios && pod install`.
 
 ## 사용한 오픈소스 (Flutter 앱, `app/`)

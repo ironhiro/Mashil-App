@@ -174,22 +174,35 @@ flowchart LR
 
 ## 7. 환경
 
-| 환경 | 구성 | 용도 |
-|---|---|---|
-| 로컬 | docker-compose의 Postgres + `dotnet run` (지금) | 개발 |
-| 스테이징 (권장) | 운영과 같은 VM 구성의 소형 인스턴스, 별도 DB | 스토어 심사용 빌드가 붙는 서버, 마이그레이션 리허설 |
-| 운영 | §2 구성 | |
+| 환경 | 주소 | 구성 | 용도 |
+|---|---|---|---|
+| 로컬 | `http://10.0.2.2:5173` (에뮬레이터) | docker-compose의 Postgres + `dotnet run` + Vite | 개발 |
+| 개발 (스테이징) | **`https://toilets-dev.ironhiro.dev`** | 운영과 같은 VM 구성의 소형 인스턴스, 별도 DB | 스토어 심사용 빌드가 붙는 서버, 마이그레이션 리허설 |
+| 운영 | **`https://toilets.ironhiro.dev`** | §2 구성 | |
+
+웹과 API 는 한 도메인에서 (`/api` 는 API, 나머지는 웹). 웹이 `/api` 를 상대 경로로 불러 CORS 가 필요 없고, 공유 링크도 페이지 주소를 그대로 쓴다 (`VITE_PUBLIC_WEB_URL` 불필요).
+
+**도메인을 정한 뒤 할 일 (2026-11-16 결정):**
+
+| 어디 | 무엇 |
+|---|---|
+| Cloudflare DNS (`ironhiro.dev`) | `toilets`, `toilets-dev` A(AAAA) 레코드 → 각 서버 IP. 처음에는 **DNS only** (프록시를 켜면 API 빈도 제한이 Cloudflare IP 를 보게 되므로 Caddy `trusted_proxies` 와 함께 바꾼다). `.dev` 는 HSTS 사전 목록이라 HTTPS 만 열린다 (Caddy 자동 TLS) |
+| Kakao Developers → 플랫폼 키 → JavaScript SDK 도메인 | `https://toilets.ironhiro.dev`, `https://toilets-dev.ironhiro.dev` (지도 SDK·카카오톡 공유) |
+| Kakao Developers → 제품 링크 관리 → 웹 도메인 | 같은 두 주소 (카카오톡 공유 카드 링크. 빠지면 기본값으로 바뀐다) |
+| Google Cloud OAuth (웹 로그인을 열 때) | 승인된 JavaScript 원본에 두 주소 |
+| 앱 빌드 | `app/env/prod.json`, `app/env/staging.json` (커밋하지 않음): `WEB_BASE_URL`·`API_BASE_URL` 을 각 주소로. `flutter build apk --dart-define-from-file=env/prod.json` |
+| 서버 | `/etc/mashil/mashil.env` 의 `MASHIL_DOMAIN` (백엔드 `deploy/.env.example`) |
 
 스토어 심사 기간에는 심사용 앱이 **스테이징 API**를 보게 해서, 운영 배포가 심사에 영향을 주지 않게 한다.
 
 ## 8. 출시 전 인프라 체크리스트
 
 - [ ] Q11: 호스팅 플랫폼과 리전 결정 (국내 리전 필수)
-- [ ] 도메인, DNS, TLS (Caddy 자동)
+- [ ] DNS 레코드와 TLS (Caddy 자동) — 도메인은 결정 (§7: `toilets.ironhiro.dev`, `toilets-dev.ironhiro.dev`), 서버 IP 가 정해지면 Cloudflare 에 레코드
 - [x] Dockerfile(api·worker·migrate)과 운영용 Compose·Caddyfile·배포 스크립트 — 백엔드 `Dockerfile`, `deploy/` (2026-11-14, 로컬 빌드·기동·문법 검증)
 - [ ] CI 파이프라인 (테스트 → 이미지 → 마이그레이션 번들 → 블루/그린) — `deploy/deploy.sh` 를 CI 에서 호출하는 형태
 - [x] CORS 를 설정으로 분리 (`Cors:Origins`)
-- [ ] Kakao JS 키 도메인·OAuth 리디렉트 URI를 운영 도메인으로 등록
+- [ ] Kakao JS SDK 도메인과 제품 링크 관리 웹 도메인에 두 주소 등록 (§7)
 - [ ] **운영 서버에서 LOCALDATA 다운로드 시험** (`--fetch`, 로컬에서는 포털 Referer 로 성공)
 - [ ] 백업 크론과 복구 리허설 (Compose `backup` 서비스를 호스트 cron 에서 실행)
 - [ ] 업타임 감시와 웹훅 연결

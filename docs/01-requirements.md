@@ -408,7 +408,7 @@ flowchart LR
 | Q11 | 호스팅 플랫폼과 리전 (국내 리전 권장. 무중단 방식이 플랫폼에 따라 달라짐) | OPS-02, NFR-16 |
 | Q9 | Kakao 이메일 동의 항목을 요청할지 (식별에는 쓰지 않음. 공지 발송 등 용도가 있을 때만) | LEG-03, LEG-05 |
 | Q4 | 공휴일 데이터 소스 (외부 API vs 정적 테이블) | MAP-05 |
-| Q5 | 웹 호스팅 위치와 도메인 (Kakao JS 키 도메인 등록 필요) | APP-01 |
+| ~~Q5~~ | ~~웹 호스팅 도메인~~ → **결정 (2026-11-16): 운영 `toilets.ironhiro.dev`, 개발 `toilets-dev.ironhiro.dev`** (웹과 API 한 도메인, Cloudflare DNS). 등록할 곳은 [08-infrastructure.md §7](08-infrastructure.md) | APP-01 |
 | Q6 | 최소 지원 OS 버전 | NFR-04 |
 | Q7 | 앱 이름과 번들 ID, 개발자 계정 명의 (개인/사업자) | LEG-01, 스토어 등록 |
 | Q15 | 수익화: 광고 제거·서포터 가격, 서포터 혜택 범위 (경로 엔진은 API 안의 A* 로 결정, 2026-11-16) | MON-01~04 |
