@@ -30,13 +30,15 @@ def main() -> int:
         print("OAuth:Kakao:Audiences:0 (네이티브 앱 키)가 user-secrets 에 없습니다.", file=sys.stderr)
         return 1
 
-    google = (data.get("OAuth") or {}).get("Google") or {}
+    google = (((data.get("OAuth") or {}).get("Google") or {}).get("ClientIds") or [None])[0]
+    if not google:
+        google = data.get("OAuth:Google:ClientIds:0") or ""  # 웹 클라이언트 ID (없으면 구글 로그인 꺼짐)
     env = {
         "WEB_BASE_URL": args.web,
         "API_BASE_URL": args.api,
         "ALLOWED_HOSTS": "",
         "KAKAO_NATIVE_APP_KEY": kakao,
-        "GOOGLE_SERVER_CLIENT_ID": (google.get("ClientIds") or [""])[0],
+        "GOOGLE_SERVER_CLIENT_ID": google,
         "GOOGLE_IOS_CLIENT_ID": "",
     }
     out = pathlib.Path(__file__).resolve().parent.parent / "env" / "dev.json"
