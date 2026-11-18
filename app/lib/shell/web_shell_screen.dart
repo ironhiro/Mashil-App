@@ -255,9 +255,10 @@ class _WebShellScreenState extends State<WebShellScreen> {
     }
   }
 
-  // Android 뒤로가기: 웹 history → 없으면 "한 번 더 누르면 종료" (APP-05)
+  // Android 뒤로가기: 열린 시트·대화상자 닫기 → 웹 history → 없으면 "한 번 더 누르면 종료" (APP-05)
   Future<void> _onBack() async {
     final c = _controller;
+    if (c != null && await _webConsumedBack(c)) return;
     if (c != null && await c.canGoBack()) {
       await c.goBack();
       return;
@@ -272,6 +273,19 @@ class _WebShellScreenState extends State<WebShellScreen> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).pressBackAgainToExit), duration: const Duration(seconds: 2)));
+  }
+
+  /// 웹에 열린 시트·대화상자·메뉴가 있으면 웹이 그것을 닫고 true (Material 3: 뒤로 가기는 맨 위 창부터).
+  /// 웹이 아직 이 함수를 모르거나(옛 웹) 오류가 나면 false 로 보고 기존처럼 history 를 넘긴다.
+  Future<bool> _webConsumedBack(WebViewController c) async {
+    try {
+      final r = await c.runJavaScriptReturningResult(
+        'typeof window.__mashilBack === "function" ? window.__mashilBack() : false',
+      );
+      return r == true || r.toString() == 'true' || r.toString() == '1';
+    } catch (_) {
+      return false;
+    }
   }
 
   @override
