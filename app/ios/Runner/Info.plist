@@ -10,6 +10,9 @@
 	<array>
 		<string>ko</string>
 		<string>en</string>
+		<string>ja</string>
+		<string>zh-Hans</string>
+		<string>zh-Hant</string>
 	</array>
 	<key>CFBundleDisplayName</key>
 	<string>마실</string>

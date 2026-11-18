@@ -36,13 +36,41 @@ class AppLanguage extends ValueNotifier<Locale?> {
     return true;
   }
 
-  /// "en", "en-US", "ko_KR" → 지원 목록의 Locale (언어 코드만 비교).
+  /// "en", "en-US", "ko_KR", "zh-Hant", "zh-TW" → 지원 목록의 Locale.
+  /// 중국어는 글자 체계로 나눈다: 번체(Hant, 대만·홍콩·마카오) / 그 밖은 간체.
   static Locale? _match(String? code, List<Locale> supported) {
     if (code == null || code.isEmpty) return null;
-    final lang = code.split(RegExp('[-_]')).first.toLowerCase();
+    final parts = code.split(RegExp('[-_]'));
+    final lang = parts.first.toLowerCase();
+    if (lang == 'zh') {
+      final want = isTraditionalChinese(parts.skip(1)) ? 'Hant' : null;
+      for (final l in supported) {
+        if (l.languageCode == 'zh' && l.scriptCode == want) return l;
+      }
+    }
     for (final l in supported) {
-      if (l.languageCode == lang) return l;
+      if (l.languageCode == lang && l.scriptCode == null) return l;
     }
     return null;
+  }
+
+  /// 중국어 지역·글자 표시 (["Hant", "TW"], ["HK"] …) 가 번체인가
+  static bool isTraditionalChinese(Iterable<String?> subtags) {
+    for (final t in subtags) {
+      final u = t?.toUpperCase();
+      if (u == 'HANT' || u == 'TW' || u == 'HK' || u == 'MO') return true;
+    }
+    return false;
+  }
+
+  /// 기기 언어 목록 → 지원 언어 (MaterialApp.localeListResolutionCallback).
+  /// Flutter 기본 규칙은 zh-TW 처럼 글자 표시가 없는 대만 기기를 간체로 고르므로, 중국어는 직접 고른다.
+  static Locale resolve(List<Locale>? device, Iterable<Locale> supported) {
+    final list = supported.toList();
+    for (final d in device ?? const <Locale>[]) {
+      final m = _match([d.languageCode, d.scriptCode, d.countryCode].whereType<String>().join('-'), list);
+      if (m != null) return m;
+    }
+    return list.first;
   }
 }

@@ -1,0 +1,21 @@
+{
+  "@@locale": "zh_Hant",
+  "appTitle": "Mashil",
+  "offlineTitle": "未連上網路",
+  "loadFailedTitle": "無法載入頁面",
+  "offlineBody": "連上網路後會自動重新載入。",
+  "loadFailedBody": "請稍後再試。",
+  "retry": "重試",
+  "pressBackAgainToExit": "再按一次即可離開",
+  "updateRequiredTitle": "需要更新",
+  "updateAvailableTitle": "有新版本",
+  "updateRequiredBody": "請更新至最新版本以繼續使用 Mashil。",
+  "updateAvailableBody": "快來體驗更好用的 Mashil。",
+  "later": "稍後",
+  "update": "更新",
+  "maintenanceTitle": "暫時維護中",
+  "maintenanceBody": "我們正在進行維護，讓 Mashil 變得更好。",
+  "maintenanceUntil": "預計恢復時間",
+  "maintenanceRetry": "再次確認",
+  "openKakaoMap": "在 KakaoMap 尋找廁所"
+}
