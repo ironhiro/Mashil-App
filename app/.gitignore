@@ -52,3 +52,5 @@ app.*.map.json
 !/env/example.json
 /ios/Flutter/Secrets.xcconfig
 /build-debug.log
+# 서울남산체는 재배포 금지라 저장소에 넣지 않는다. tool/make_fonts.py 로 만든다 (Overpass 도 같이 만든다)
+/assets/fonts/
