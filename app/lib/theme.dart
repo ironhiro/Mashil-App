@@ -61,6 +61,10 @@ ThemeData mashilTheme(Brightness b) {
   const square = RoundedRectangleBorder();
   final bar = BorderSide(color: t.line, width: 2);
   return ThemeData(
+    // 웹과 같은 서체: 라틴·숫자는 Overpass, 한글은 서울남산체 (assets/fonts, tool/make_fonts.py).
+    // 일본어·중국어 글자는 둘 다 없어서 기기 글꼴로 그린다 (웹의 :lang(ja|zh) 와 같은 결과)
+    fontFamily: 'Overpass',
+    fontFamilyFallback: const ['SeoulNamsan'],
     colorScheme: scheme,
     scaffoldBackgroundColor: t.bg,
     useMaterial3: true,

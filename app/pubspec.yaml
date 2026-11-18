@@ -81,6 +81,25 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # 웹과 같은 서체 (앱 고유 화면: 시작·오프라인·오류·점검·업데이트). 파일은 tool/make_fonts.py 가 만든다 (저장소에 없음)
+  fonts:
+    - family: Overpass
+      fonts:
+        - asset: assets/fonts/Overpass-Medium.ttf
+          weight: 400
+        - asset: assets/fonts/Overpass-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Overpass-ExtraBold.ttf
+          weight: 800
+    - family: SeoulNamsan
+      fonts:
+        - asset: assets/fonts/SeoulNamsanM.ttf
+          weight: 400
+        - asset: assets/fonts/SeoulNamsanB.ttf
+          weight: 700
+        - asset: assets/fonts/SeoulNamsanEB.ttf
+          weight: 800
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

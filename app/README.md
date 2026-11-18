@@ -17,6 +17,13 @@ flutter config --jdk-dir "C:\Program Files\Android\Android Studio\jbr"
 
 > `D:\tools\flutter` 를 git 이 "dubious ownership" 으로 막으면 `git config --global --add safe.directory D:/tools/flutter`.
 
+서체 파일을 한 번 만든다 (서울남산체는 재배포 금지라 저장소에 없다. 없으면 빌드가 실패한다):
+
+```
+pip install fonttools brotli
+python tool/make_fonts.py
+```
+
 ## 실행 (에뮬레이터 + 로컬 백엔드)
 
 1. 백엔드 API 를 개발 모드로 띄운다 (`http://localhost:5099`, 에뮬레이터에서는 `http://10.0.2.2:5099`)
