@@ -1,5 +1,6 @@
 import java.net.URI
 import java.util.Base64
+import java.util.Properties
 
 // flutter run/build --dart-define-from-file=env/dev.json 의 값은 Gradle 에 "dart-defines" (base64, 쉼표 구분) 로 들어온다
 val dartDefines: Map<String, String> = (project.findProperty("dart-defines") as String?)
@@ -47,11 +48,27 @@ android {
             runCatching { URI(dartDefines["WEB_BASE_URL"] ?: "").host }.getOrNull() ?: "toilets.ironhiro.dev"
     }
 
+    // 업로드 키 (Play 콘솔에 올리는 AAB 서명). android/key.properties 에서 읽는다 (저장소에 넣지 않음, .gitignore).
+    // key.properties 가 없으면 디버그 키로 서명해 `flutter run --release` 는 되지만, 그 AAB 는 Play 에 올릴 수 없다.
+    //   storeFile=<업로드 키스토어 경로>   storePassword=…   keyAlias=upload   keyPassword=…
+    val keyProps = Properties().apply {
+        val f = rootProject.file("key.properties")
+        if (f.exists()) f.inputStream().use { load(it) }
+    }
+    signingConfigs {
+        if (keyProps.getProperty("storeFile") != null) {
+            create("upload") {
+                storeFile = file(keyProps.getProperty("storeFile"))
+                storePassword = keyProps.getProperty("storePassword")
+                keyAlias = keyProps.getProperty("keyAlias")
+                keyPassword = keyProps.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("upload") ?: signingConfigs.getByName("debug")
         }
     }
 }
