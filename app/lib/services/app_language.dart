@@ -1,10 +1,10 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// 앱 화면 언어. 웹이 브리지 `setLanguage` 로 알려 준 언어를 쓰고, 저장해서 다음 실행에도 유지한다.
-/// 값이 null 이면 기기 언어를 따른다 (웹이 아직 한 번도 알려 주지 않았을 때).
+/// 앱 화면 언어. 시작할 때는 기기(앱별) 언어를 따르고(null), 웹이 브리지 `setLanguage` 로 알려 주면 그 언어로 맞춘다.
 ///
-/// 웹이 언어의 기준인 이유: 웹 메뉴에서 언어를 고를 수 있고, 앱 네이티브 문구(오류 화면 등)도 같은 언어로 보여야 해서.
+/// 저장하지 않는다 (2026-11-18): 앱 안에 언어 고르기를 없애고 기기 언어를 따르기로 해서, 저장해 두면 기기 언어를
+/// 바꾼 뒤에도 네이티브 화면(오류·점검 화면)만 예전 언어로 남는다. 예전 버전이 저장한 값은 처음 실행 때 지운다.
 class AppLanguage extends ValueNotifier<Locale?> {
   AppLanguage({
     Locale? initial,
@@ -17,18 +17,14 @@ class AppLanguage extends ValueNotifier<Locale?> {
   /// 지원 언어 코드 (AppLocalizations.supportedLocales).
   final List<Locale> supported;
 
-  /// 고른 언어 저장 (기본: SharedPreferences). 테스트에서는 바꿔 끼운다.
+  /// 언어가 바뀔 때 부르는 후크 (앱에서는 쓰지 않는다. 테스트가 바뀐 값을 확인할 때 넣는다).
   final Future<void> Function(String code)? persist;
 
-  /// 저장된 언어로 시작. 저장값이 없거나 지원하지 않는 언어면 기기 언어.
+  /// 기기 언어로 시작한다. 예전 버전이 저장해 둔 언어는 지운다.
   static Future<AppLanguage> load(List<Locale> supported) async {
     final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getString(_prefsKey);
-    return AppLanguage(
-      initial: _match(saved, supported),
-      supported: supported,
-      persist: (code) => prefs.setString(_prefsKey, code),
-    );
+    await prefs.remove(_prefsKey);
+    return AppLanguage(supported: supported);
   }
 
   /// 언어 바꾸기. 지원하지 않는 언어면 false.
