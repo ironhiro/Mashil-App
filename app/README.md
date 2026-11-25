@@ -55,7 +55,7 @@ python tool/make_dev_env.py --web http://10.0.2.2:5173
 
 | 항목 | 값 |
 |---|---|
-| 패키지명 | `kr.mashil.mashil` (임시 — Q7 에서 확정하면 `android/app/build.gradle.kts` 의 `applicationId` 와 함께 바꾼다) |
+| 패키지명 | `dev.ironhiro.mashil` (2026-11-26 확정, Q7. Play 에 처음 올리면 바꿀 수 없다. iOS 번들 ID 도 같다) |
 | 키 해시 | 디버그 키: `python tool/kakao_key_hash.py` 로 출력. 릴리스·Play 앱 서명 키도 나중에 추가 |
 
 카카오톡이 없는 기기(에뮬레이터)는 카카오계정 로그인(Custom Tabs)으로 넘어간다.
@@ -80,7 +80,7 @@ iOS 는 `ios/Flutter/Secrets.xcconfig` (gitignore) 에 `KAKAO_NATIVE_APP_KEY=...
 **PC (개발 서버)**
 1. vite 를 와이파이에서 보이게 띄운다: `npm run dev -- --host 0.0.0.0 --port 5173`. 처음이면 Windows 방화벽 창에서 **개인 네트워크** 허용. API 는 vite 가 `/api` 로 프록시하므로 따로 열 필요 없다
 2. PC 의 와이파이 IP 확인 (`ipconfig` 의 IPv4, 예: `192.168.0.10`)
-3. 카카오 콘솔 [플랫폼] → Web 에 `http://<PC IP>:5173` 추가 (지도 JS SDK). 카카오 로그인까지 볼 거면 [플랫폼] → iOS 에 번들 ID `kr.mashil.mashil` 추가
+3. 카카오 콘솔 [플랫폼] → Web 에 `http://<PC IP>:5173` 추가 (지도 JS SDK). 카카오 로그인까지 볼 거면 [플랫폼] → iOS 에 번들 ID `dev.ironhiro.mashil` 추가
 
 **Mac (한 번만)**
 1. Xcode (App Store), Flutter, CocoaPods (`brew install cocoapods`) 설치, `flutter doctor` 로 iOS 항목 확인

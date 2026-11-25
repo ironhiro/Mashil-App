@@ -17,7 +17,7 @@ plugins {
 }
 
 android {
-    namespace = "kr.mashil.mashil"
+    namespace = "dev.ironhiro.mashil"
     // permission_handler_android 가 compileSdk 37 이상을 요구
     compileSdk = maxOf(flutter.compileSdkVersion, 37)
     ndkVersion = flutter.ndkVersion
@@ -29,7 +29,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "kr.mashil.mashil"
+        applicationId = "dev.ironhiro.mashil"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
