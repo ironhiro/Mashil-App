@@ -855,11 +855,12 @@ classDiagram
 | `getLocation` | `{ maximumAgeMs?, highAccuracy?, timeoutMs? }` | `{ ok, lat, lng, accuracy, cached }` 또는 `{ ok:false, reason:"denied"\|"deniedForever"\|"serviceDisabled"\|"timeout" }`. `maximumAgeMs` 안의 마지막 위치가 있으면 새로 재지 않고 바로 준다 (`cached: true`). 파라미터가 없으면 정밀 측정, 12초까지 |
 | `openSettings` | — | `{ ok }` |
 | `openDirections` | `{ lat, lng, name, mode?: "walk"\|"car" }` | `{ ok, app:"kakaomap"\|"web" }`. 카카오맵 앱 `by=FOOT` / `by=CAR` (mode 가 없으면 도보) |
-| `getAppInfo` | — | `{ version, platform, providers:["google","kakao","apple"] }` (웹에서 앱 여부와 노출할 로그인 버튼 판별) |
+| `getAppInfo` | — | `{ version, platform, providers:["google","kakao","apple"], language, ads:{ enabled } }` (웹에서 앱 여부와 노출할 로그인 버튼 판별) |
 | `signIn` | `{ provider, nonce }` | `{ ok, provider, idToken?, accessToken?, authorizationCode? }` 또는 `{ ok:false, reason:"cancelled"\|"failed" }` |
 | `signOut` | `{ provider }` | `{ ok }` |
 | `watchLocation` | `{ highAccuracy?, distanceFilterM? }` (기본 true, 3m) | `{ ok }` 또는 `{ ok:false, reason }` (getLocation 과 같은 사유). 이후 위치가 바뀔 때마다 `location` 이벤트. 방향 안내 화면에서만 쓴다 |
 | `stopWatchLocation` | — | `{ ok }` |
+| `setAdBanner` | `{ visible }` | `{ ok }` 또는 `{ ok:false, reason:"adsDisabled" }`. 하단 배너를 켜고 끈다 (목록·검색 결과, 화장실 상세만, MON-01). 문서를 새로 불러오면 꺼진다 |
 | `share` | `{ target:"kakao"\|"system", title, url, description?, address?, buttonTitle? }` | `{ ok, via:"kakaoTalk"\|"kakaoWeb"\|"shared" }` 또는 `{ ok:false, reason:"dismissed"\|"invalidParams"\|"failed" }`. `kakao` 는 카카오톡 위치 카드(주소가 있으면 "위치 보기" 버튼), 카카오톡이 없으면 카카오 웹 공유. `system` 은 시스템 공유 창. `url` 은 허용 호스트만 |
 
 - 웹에서 앱으로: `window.MashilBridge.postMessage(JSON.stringify({requestId, method, params}))`

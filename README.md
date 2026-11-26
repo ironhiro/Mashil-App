@@ -102,6 +102,7 @@ Flutter **3.47 이상** (개발·CI 는 3.50.0, Dart 3.14). 그보다 낮으면 
 | [http](https://pub.dev/packages/http) | 1.6.0 | BSD-3-Clause | 버전 확인 API 호출 |
 | [shared_preferences](https://pub.dev/packages/shared_preferences) | 2.5.6 | BSD-3-Clause | 앱 언어 저장 |
 | [crypto](https://pub.dev/packages/crypto) | 3.0.8 | BSD-3-Clause | 로그인 nonce 해시 |
+| [google_mobile_ads](https://pub.dev/packages/google_mobile_ads) | 9.2.0 | Apache-2.0 | 하단 배너 광고 (AdMob, 비맞춤) |
 
 ### 개발 도구
 
@@ -121,4 +122,5 @@ Flutter **3.47 이상** (개발·CI 는 3.50.0, Dart 3.14). 그보다 낮으면 
 | Kakao 로그인, Google 로그인, Sign in with Apple | 소셜 로그인 | 각 제공자 약관. 앱 키는 `env/*.json`, `ios/Flutter/Secrets.xcconfig` (저장소에 넣지 않음) |
 | [카카오맵](https://map.kakao.com/) 앱·웹 | 길찾기 | 카카오맵 이용약관 |
 | 카카오톡 공유 | 화장실 공유 (위치 카드) | Kakao Developers 약관. 카드 링크 도메인은 콘솔 [제품 링크 관리] > [웹 도메인]에 등록해야 열린다 (등록하지 않은 도메인은 기본값으로 바뀐다) |
+| [Google AdMob](https://admob.google.com/) | Android 앱 하단 배너 광고 (목록·검색 결과, 화장실 상세) | AdMob 정책, Play 광고 정책. 실제 광고 단위·앱 ID 는 프로덕션 `env/*.json` 에만 |
 

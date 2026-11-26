@@ -10,10 +10,12 @@ import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import '../app_config.dart';
 import '../bridge/mashil_js_bridge.dart';
 import '../l10n/app_localizations.dart';
+import '../services/ad_service.dart';
 import '../services/app_status.dart';
 import '../services/connectivity_service.dart';
 import '../services/external_launcher.dart';
 import '../theme.dart';
+import 'ad_banner.dart';
 import 'deep_links.dart';
 import 'error_screen.dart';
 import 'maintenance_screen.dart';
@@ -29,6 +31,7 @@ class WebShellScreen extends StatefulWidget {
     required this.connectivity,
     this.deepLinks,
     this.onFirstShown,
+    this.ads,
   });
 
   final AppConfig config;
@@ -41,6 +44,15 @@ class WebShellScreen extends StatefulWidget {
 
   /// 첫 페이지가 다 뜨거나(또는 오류 화면이 뜨면) 한 번 불린다. 시작 연출이 이때까지 문을 닫고 기다린다.
   final VoidCallback? onFirstShown;
+
+  /// 하단 배너 광고 (꺼져 있으면 null). 웹이 브리지 setAdBanner 로 화면마다 켠다
+  final AdService? ads;
+
+  /// 배너가 보이는 동안 웹의 하단 여백을 0 으로 (웹은 env(safe-area-inset-bottom) 대신 --app-safe-bottom 을 쓴다).
+  /// 배너가 제스처 막대 위를 차지하므로, 그대로 두면 웹 하단 바 아래에 빈 띠가 생긴다.
+  static String bottomInsetScript(bool bannerShown) => bannerShown
+      ? "document.documentElement.style.setProperty('--app-safe-bottom','0px');"
+      : "document.documentElement.style.removeProperty('--app-safe-bottom');";
 
   @override
   State<WebShellScreen> createState() => _WebShellScreenState();
@@ -79,6 +91,12 @@ class _WebShellScreenState extends State<WebShellScreen> {
   bool _checkingStatus = false;
   DateTime? _lastBackAt;
   bool _shown = false;
+  bool _bannerShown = false;
+
+  void _onBannerShown(bool shown) {
+    _bannerShown = shown;
+    _controller?.runJavaScript(WebShellScreen.bottomInsetScript(shown));
+  }
 
   void _markShown() {
     if (_shown) return;
@@ -163,11 +181,15 @@ class _WebShellScreenState extends State<WebShellScreen> {
         _currentUrl = Uri.tryParse(url);
         // 문서를 새로 부르면 이전 페이지의 위치 구독자는 사라진다 (새로고침 등). GPS 를 끈다
         unawaited(_bridge.stopWatchingLocation());
+        // 배너도 새 페이지가 다시 켤 때까지 내린다
+        widget.ads?.wanted.value = false;
         if (mounted) setState(() => _documentLoading = true);
       },
       onProgress: (p) => mounted ? setState(() => _progress = p) : null,
       onPageFinished: (url) {
         _currentUrl = Uri.tryParse(url);
+        // 문서를 새로 불러오면 인라인 스타일이 사라진다. 배너가 아직 보이면 다시 알린다
+        if (_bannerShown) c.runJavaScript(WebShellScreen.bottomInsetScript(true));
         c.runJavaScript("window.dispatchEvent(new Event('mashilbridgeready'));");
         if (mounted) {
           setState(() {
@@ -308,31 +330,45 @@ class _WebShellScreenState extends State<WebShellScreen> {
       child: Scaffold(
         // 아래쪽은 웹뷰가 시스템 제스처 막대 밑까지 그린다. 웹이 env(safe-area-inset-bottom) 로 하단 탭과 하단 바를
         // 그 위로 올린다 (여기서도 띄우면 여백이 두 번 생겨 하단 탭 아래에 빈 띠가 남는다).
+        // 광고 배너가 보이면 배너가 막대 위를 차지하고, 웹에는 여백 0 을 알린다 (bottomInsetScript, MON-01).
         body: SafeArea(
           bottom: false,
-          child: Stack(
+          child: Column(
             children: [
-              if (_controller case final c?)
-                WebViewWidget(controller: c)
-              else
-                ColoredBox(color: MashilColors.of(context).bg, child: const SizedBox.expand()),
-              // 첫 로드는 보통 시작 연출(닫힌 문) 뒤에서 끝난다. 그보다 늦거나 문서를 새로 불러올 때만 위쪽 가는 줄.
-              // 웹 안의 화면 전환에는 띄우지 않는다 (웹이 자기 로딩 표시를 한다).
-              if ((!_firstLoadDone || (_documentLoading && _progress < 100)) && !showError)
-                Align(
-                  alignment: Alignment.topCenter,
-                  child: LinearProgressIndicator(value: _firstLoadDone ? _progress / 100 : null),
+              Expanded(
+                child: Stack(
+                  children: [
+                    if (_controller case final c?)
+                      WebViewWidget(controller: c)
+                    else
+                      ColoredBox(color: MashilColors.of(context).bg, child: const SizedBox.expand()),
+                    // 첫 로드는 보통 시작 연출(닫힌 문) 뒤에서 끝난다. 그보다 늦거나 문서를 새로 불러올 때만 위쪽 가는 줄.
+                    // 웹 안의 화면 전환에는 띄우지 않는다 (웹이 자기 로딩 표시를 한다).
+                    if ((!_firstLoadDone || (_documentLoading && _progress < 100)) && !showError)
+                      Align(
+                        alignment: Alignment.topCenter,
+                        child: LinearProgressIndicator(value: _firstLoadDone ? _progress / 100 : null),
+                      ),
+                    if (showError)
+                      Positioned.fill(
+                        child: !_offline && _maintenance != null
+                            ? MaintenanceScreen(
+                                status: _maintenance!,
+                                retrying: _checkingStatus,
+                                onRetry: _retry,
+                                onOpenKakaoMap: () => widget.launcher.openKakaoMapSearch('화장실'),
+                              )
+                            : ErrorScreen(offline: _offline, detail: _loadError, onRetry: _retry),
+                      ),
+                  ],
                 ),
-              if (showError)
-                Positioned.fill(
-                  child: !_offline && _maintenance != null
-                      ? MaintenanceScreen(
-                          status: _maintenance!,
-                          retrying: _checkingStatus,
-                          onRetry: _retry,
-                          onOpenKakaoMap: () => widget.launcher.openKakaoMapSearch('화장실'),
-                        )
-                      : ErrorScreen(offline: _offline, detail: _loadError, onRetry: _retry),
+              ),
+              // 오류·점검 화면과 키보드가 올라온 동안은 숨긴다 (콘텐츠 없는 화면·입력 옆 광고는 AdMob 정책 위반)
+              if (widget.ads case final ads?)
+                AdBanner(
+                  ads: ads,
+                  onShownChanged: _onBannerShown,
+                  hidden: showError || MediaQuery.viewInsetsOf(context).bottom > 0,
                 ),
             ],
           ),

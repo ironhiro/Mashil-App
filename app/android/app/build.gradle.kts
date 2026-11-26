@@ -42,6 +42,10 @@ android {
         versionName = flutter.versionName
         // 카카오 로그인 리다이렉트 스킴 kakao{네이티브 앱 키}
         manifestPlaceholders["kakaoNativeAppKey"] = dartDefines["KAKAO_NATIVE_APP_KEY"] ?: "MISSING_KAKAO_KEY"
+        // AdMob 앱 ID. SDK 가 시작할 때 꼭 있어야 해서(없으면 앱이 죽음) 비우면 Google 의 테스트 앱 ID.
+        // 실제 ID 는 프로덕션 env 의 ADMOB_APP_ID_ANDROID 에만 (비공개 테스트는 테스트 ID 로, MON-01)
+        manifestPlaceholders["admobAppId"] = dartDefines["ADMOB_APP_ID_ANDROID"]?.takeIf { it.isNotBlank() }
+            ?: "ca-app-pub-3940256099942544~3347511713"
         // 공유 링크(App Links)를 받을 호스트 = 웹 주소의 호스트 (staging: toilets-dev, prod: toilets).
         // 서버가 /.well-known/assetlinks.json 으로 이 앱의 서명 인증서를 밝혀야 확인된다 (백엔드 docs/APP-LINKS.md)
         manifestPlaceholders["appLinkHost"] =

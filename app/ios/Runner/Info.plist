@@ -87,6 +87,10 @@
 	<!-- 카카오 로그인 리다이렉트 kakao{네이티브 앱 키} — ios/Flutter/Secrets.xcconfig 의 KAKAO_NATIVE_APP_KEY -->
 	<!-- 개발 중 같은 와이파이의 개발 서버(http://192.168.x.x:5173 등)에 붙기 위해 로컬 네트워크만 http 허용.
 	     인터넷 주소는 그대로 HTTPS 만 (ATS). -->
+	<!-- AdMob 앱 ID. 없으면 SDK 가 시작할 때 앱이 죽는다. 기본은 테스트 ID (Debug/Release.xcconfig), 실제 값은 Secrets.xcconfig.
+	     iOS 출시 때 SKAdNetworkItems·추적 동의(ATT) 문구도 넣어야 한다 -->
+	<key>GADApplicationIdentifier</key>
+	<string>$(ADMOB_APP_ID_IOS)</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>
@@ -98,6 +102,14 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>kakao$(KAKAO_NATIVE_APP_KEY)</string>
+			</array>
+		</dict>
+		<!-- Google 로그인 리다이렉트: iOS 클라이언트 ID 의 역순 (com.googleusercontent.apps.xxx).
+		     Secrets.xcconfig 의 GOOGLE_REVERSED_CLIENT_ID, tool/make_dev_env.py --ios 가 채운다 -->
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>$(GOOGLE_REVERSED_CLIENT_ID)</string>
 			</array>
 		</dict>
 	</array>

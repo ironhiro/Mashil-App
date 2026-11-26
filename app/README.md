@@ -70,8 +70,27 @@ python tool/make_dev_env.py --web http://10.0.2.2:5173
 | `KAKAO_NATIVE_APP_KEY` | 카카오 네이티브 앱 키. Android 리다이렉트 스킴에도 쓰인다 (Gradle 이 dart-defines 에서 읽음) |
 | `GOOGLE_SERVER_CLIENT_ID` | Google **웹** 클라이언트 ID (Android 에서 ID Token 의 aud). 비우면 Google 버튼 없음 |
 | `GOOGLE_IOS_CLIENT_ID` | Google iOS 클라이언트 ID |
+| `ADS_ENABLED` | `true` 면 하단 배너 광고 (AdMob, MON-01). 아니면 광고 SDK 를 시작하지 않는다 |
+| `ADMOB_BANNER_ID` | 배너 광고 단위 ID. **비우면 Google 테스트 단위** — 실제 ID 는 AdMob 앱 승인 뒤 프로덕션 env 에만 (테스터가 실제 광고를 누르면 무효 트래픽) |
+| `ADMOB_APP_ID_ANDROID` | AdMob 앱 ID (Gradle 이 매니페스트에 넣음). 비우면 테스트 앱 ID. iOS 는 `Secrets.xcconfig` 의 `ADMOB_APP_ID_IOS` |
 
-iOS 는 `ios/Flutter/Secrets.xcconfig` (gitignore) 에 `KAKAO_NATIVE_APP_KEY=...` 를 둔다. Sign in with Apple 은 iOS 에서만 노출 (STO-04).
+iOS 는 URL 스킴(`kakao{키}`, Google 역순 클라이언트 ID)을 `ios/Flutter/Secrets.xcconfig` (gitignore) 에서 읽는다. `python3 tool/make_dev_env.py --ios` 가 env json 과 같은 키로 둘 다 만든다. Sign in with Apple 은 iOS 에서만 노출 (STO-04). 유료 개발자 팀이 있어야 해서 `Runner.entitlements` 는 아직 없다 — 그 전까지 iOS 애플 로그인은 실패한다.
+
+### iOS 시뮬레이터 (Mac 한 대에서 전부)
+
+시뮬레이터는 Mac 의 `localhost` 를 그대로 쓴다 (Android 의 `10.0.2.2` 같은 우회 없음). `http://localhost:5173` 은 카카오 콘솔 Web 에 이미 등록돼 있다. 플러그인은 Swift Package Manager 로 받으므로 CocoaPods 는 필요 없다.
+
+1. 준비 (한 번만): Xcode, Flutter 3.50+, .NET 10 (`brew install dotnet@10`, keg-only 라 `export PATH="/opt/homebrew/opt/dotnet@10/bin:$PATH"`), Docker
+2. 백엔드 (Mashil-Back): README 의 빌드 & 실행대로 `docker compose up -d` → user-secrets → `dotnet ef database update` → 임포트 → `dotnet run --project src/Mashil.Api` (:5099)
+3. 웹 (Mashil-Front): `.env.local` 에 `VITE_KAKAO_MAP_KEY` → `npm run dev` (:5173, `/api` 는 :5099 로 프록시)
+4. 앱:
+   ```
+   python3 tool/make_dev_env.py --ios      # env/ios-sim.json + ios/Flutter/Secrets.xcconfig
+   open -a Simulator
+   flutter run -d "iPhone 16" --dart-define-from-file=env/ios-sim.json
+   ```
+
+카카오톡이 없는 시뮬레이터는 카카오계정 로그인(웹)으로 넘어간다. 카카오 로그인을 보려면 카카오 콘솔 [플랫폼] → iOS 에 번들 ID `dev.ironhiro.mashil` 이 있어야 한다.
 
 ### 아이폰에서 테스트 (Mac)
 
@@ -83,11 +102,9 @@ iOS 는 `ios/Flutter/Secrets.xcconfig` (gitignore) 에 `KAKAO_NATIVE_APP_KEY=...
 3. 카카오 콘솔 [플랫폼] → Web 에 `http://<PC IP>:5173` 추가 (지도 JS SDK). 카카오 로그인까지 볼 거면 [플랫폼] → iOS 에 번들 ID `dev.ironhiro.mashil` 추가
 
 **Mac (한 번만)**
-1. Xcode (App Store), Flutter, CocoaPods (`brew install cocoapods`) 설치, `flutter doctor` 로 iOS 항목 확인
+1. Xcode (App Store), Flutter 설치, `flutter doctor` 로 iOS 항목 확인 (플러그인은 Swift Package Manager 로 받아서 CocoaPods 는 필요 없다)
 2. 저장소를 받고 `app/` 에서 `flutter pub get`
-3. 키 파일 두 개를 직접 만든다 (git 에 없음, 메신저·메일로 키를 보내지 말 것):
-   - `env/ios.json`: `env/example.json` 을 복사해 `WEB_BASE_URL`·`API_BASE_URL` 을 `http://<PC IP>:5173`, `KAKAO_NATIVE_APP_KEY` 를 채운다 (Google 은 비워도 됨)
-   - `ios/Flutter/Secrets.xcconfig`: `KAKAO_NATIVE_APP_KEY=<같은 키>`
+3. 키 파일을 만든다 (git 에 없음, 메신저·메일로 키를 보내지 말 것): `python3 tool/make_dev_env.py --ios --host <PC IP> --out ios` → `env/ios.json` + `ios/Flutter/Secrets.xcconfig`. 이 Mac 에 백엔드 user-secrets 가 없으면 키가 비므로 두 파일의 카카오 키를 직접 채운다 (같은 값). 서버도 Mac 에서 띄웠다면 `<PC IP>` 대신 Mac 의 IP
 4. `open ios/Runner.xcworkspace` → Runner 타깃 → Signing & Capabilities → Team 에 내 Apple ID (무료 개인 팀 가능)
 
 **아이폰**
@@ -98,6 +115,18 @@ iOS 는 `ios/Flutter/Secrets.xcconfig` (gitignore) 에 `KAKAO_NATIVE_APP_KEY=...
 
 무료 개인 팀으로 설치한 앱은 7일 뒤 열리지 않는다 (다시 `flutter run`). 무료 팀은 Sign in with Apple 기능을 쓸 수 없어서 애플 로그인은 실패한다.
 
+## 광고 (AdMob, docs/01 MON-01)
+
+화면 아래 고정 적응형 배너 하나 (`lib/shell/ad_banner.dart`, `lib/services/ad_service.dart`). 전면·앱 오프닝 광고는 쓰지 않는다.
+
+- **보이는 화면은 웹이 정한다**: 목록·검색 결과와 화장실 상세에서 브리지 `setAdBanner { visible: true }`, 떠날 때 `false`. 문서를 새로 불러오면 꺼진다. 끄면 광고를 버린다 (안 보이는 광고가 뒤에서 갱신되지 않도록)
+- **비맞춤 광고**만 요청한다 (`nonPersonalizedAds`). 그래서 동의 화면(UMP)이 없다. 맞춤 광고로 바꾸면 UMP, 처리방침, Play 데이터 보안을 함께 고친다
+- 웹 화면과 8px 띄우고 선을 긋는다 (실수 클릭 배치는 AdMob 정책 위반). 키보드가 올라오거나 오류·점검 화면이면 숨긴다
+- 배너가 보이면 제스처 막대 위를 배너가 차지하므로, 앱이 `<html>` 에 `--app-safe-bottom: 0px` 을 넣는다. 웹은 하단 여백에 `env(safe-area-inset-bottom)` 대신 이 변수를 쓴다 (Mashil-Front `tokens.css`)
+- SDK 초기화는 시작 연출이 끝난 뒤
+- ID 를 비우면 Google 테스트 ID. 실제 ID 는 AdMob 앱 승인(스토어 등록 후) 뒤 프로덕션 env 에만
+- iOS 는 SDK 가 시작할 때 필요한 테스트 앱 ID 만 넣어 두었다. 출시할 때 `SKAdNetworkItems`, 추적 동의(ATT) 문구를 추가한다
+
 ## JS 브리지
 
 - 웹 → 앱: `window.MashilBridge.postMessage(JSON.stringify({ requestId, method, params }))`
@@ -107,13 +136,14 @@ iOS 는 `ios/Flutter/Secrets.xcconfig` (gitignore) 에 `KAKAO_NATIVE_APP_KEY=...
 
 | method | params | 응답 |
 |---|---|---|
-| `getAppInfo` | — | `{ ok, version, platform, providers, language }` |
+| `getAppInfo` | — | `{ ok, version, platform, providers, language, ads: { enabled } }` |
 | `getLocation` | `{ maximumAgeMs?, highAccuracy?, timeoutMs? }` | `{ ok, lat, lng, accuracy, cached }` / `{ ok:false, reason: denied·deniedForever·serviceDisabled·timeout }`. `maximumAgeMs` 안의 마지막 위치면 바로 (`cached: true`) |
 | `openSettings` | — | `{ ok }` |
 | `openDirections` | `{ lat, lng, name }` | `{ ok, app: kakaomap·web }` |
 | `signIn` | `{ provider: kakao·google·apple, nonce }` | `{ ok, provider, idToken?, accessToken?, authorizationCode?, displayName? }` / `{ ok:false, reason: cancelled·failed·busy·unknownProvider }` |
 | `signOut` | `{ provider }` | `{ ok }` |
 | `setLanguage` | `{ language: ko·en }` | `{ ok, language }` / `{ ok:false, reason: unsupportedLanguage }` |
+| `setAdBanner` | `{ visible }` | `{ ok }` / `{ ok:false, reason: adsDisabled }`. 하단 배너 켜고 끄기 (목록·검색 결과, 화장실 상세만). 문서를 새로 불러오면 꺼진다 |
 
 ### 웹 쪽 구현 (`src/lib/nativeBridge.ts` 예시)
 

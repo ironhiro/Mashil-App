@@ -1,18 +1,21 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show ValueListenable, ValueNotifier;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart' show Locale;
 import 'package:mashil/app_config.dart';
 import 'package:mashil/auth/social_auth_service.dart';
 import 'package:mashil/bridge/bridge_message.dart';
 import 'package:mashil/bridge/mashil_js_bridge.dart';
+import 'package:mashil/services/ad_service.dart';
 import 'package:mashil/services/app_language.dart';
 import 'package:mashil/services/external_launcher.dart';
 import 'package:mashil/services/location_service.dart';
 import 'package:mashil/services/share_service.dart';
 import 'package:mashil/services/version_checker.dart';
 import 'package:mashil/shell/navigation_policy.dart';
+import 'package:mashil/shell/web_shell_screen.dart';
 
 class FakeLocation implements LocationService {
   PermissionState state = PermissionState.granted;
@@ -109,6 +112,17 @@ class FakeAuth implements SocialAuthService {
   Future<void> signOut(AuthProvider p) async => signOuts++;
 }
 
+class FakeAds implements AdService {
+  @override
+  final ValueListenable<bool> ready = ValueNotifier(true);
+  @override
+  final wanted = ValueNotifier(false);
+  @override
+  String get bannerUnitId => 'test';
+  @override
+  Future<void> start() async {}
+}
+
 void main() {
   late List<String> scripts;
   late FakeLocation location;
@@ -119,7 +133,7 @@ void main() {
   late List<String> savedLanguages;
   var trusted = true;
 
-  MashilJsBridge bridge() => MashilJsBridge(
+  MashilJsBridge bridge({AdService? ads}) => MashilJsBridge(
         runJavaScript: (s) async => scripts.add(s),
         location: location,
         launcher: launcher,
@@ -129,6 +143,7 @@ void main() {
         isTrustedPage: () => trusted,
         share: share,
         shareHosts: const {'mashil.example'},
+        ads: ads,
       );
 
   /// 응답 스크립트에서 (requestId, result) 를 꺼낸다.
@@ -158,7 +173,41 @@ void main() {
     await bridge().onMessage(msg('a1', 'getAppInfo'));
     final (id, r) = reply(scripts.single);
     expect(id, 'a1');
-    expect(r, {'ok': true, 'version': '1.0.0', 'platform': 'android', 'providers': ['kakao'], 'language': null});
+    expect(r, {
+      'ok': true,
+      'version': '1.0.0',
+      'platform': 'android',
+      'providers': ['kakao'],
+      'language': null,
+      'ads': {'enabled': false},
+    });
+  });
+
+  test('광고: setAdBanner 는 웹이 원하는지만 바꾸고, 광고가 꺼져 있으면 거절 (MON-01)', () async {
+    await bridge().onMessage(msg('b0', 'setAdBanner', {'visible': true}));
+    expect(reply(scripts.last).$2, {'ok': false, 'reason': 'adsDisabled'});
+
+    final ads = FakeAds();
+    final b = bridge(ads: ads);
+    await b.onMessage(msg('b1', 'getAppInfo'));
+    expect(reply(scripts.last).$2['ads'], {'enabled': true});
+    await b.onMessage(msg('b2', 'setAdBanner', {'visible': true}));
+    expect(reply(scripts.last).$2, {'ok': true});
+    expect(ads.wanted.value, isTrue);
+    await b.onMessage(msg('b3', 'setAdBanner', {'visible': 'yes'})); // true 만 켠다
+    expect(ads.wanted.value, isFalse);
+  });
+
+  test('광고: 비맞춤 광고만 요청하고, 단위 ID 를 안 주면 Google 테스트 단위', () {
+    expect(AdService.request.nonPersonalizedAds, isTrue);
+    final c = AppConfig.fromEnvironment();
+    expect(c.bannerUnitIdFor('android'), AppConfig.testBannerAndroid);
+    expect(c.bannerUnitIdFor('ios'), AppConfig.testBannerIos);
+  });
+
+  test('배너가 보이는 동안 웹의 하단 여백 변수를 0 으로, 내려가면 되돌린다', () {
+    expect(WebShellScreen.bottomInsetScript(true), contains("setProperty('--app-safe-bottom','0px')"));
+    expect(WebShellScreen.bottomInsetScript(false), contains("removeProperty('--app-safe-bottom')"));
   });
 
   test('setLanguage: 지원 언어면 앱 언어를 바꾸고 저장, 아니면 거절', () async {
