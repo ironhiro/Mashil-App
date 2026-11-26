@@ -1,4 +1,4 @@
 #include "Generated.xcconfig"
 
-// 카카오 네이티브 앱 키 등 (gitignore). 예: KAKAO_NATIVE_APP_KEY=xxxx
+// 카카오 네이티브 앱 키, Google 역순 클라이언트 ID (gitignore). tool/make_dev_env.py --ios 가 만든다
 #include? "Secrets.xcconfig"

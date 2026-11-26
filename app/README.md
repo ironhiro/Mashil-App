@@ -71,7 +71,23 @@ python tool/make_dev_env.py --web http://10.0.2.2:5173
 | `GOOGLE_SERVER_CLIENT_ID` | Google **웹** 클라이언트 ID (Android 에서 ID Token 의 aud). 비우면 Google 버튼 없음 |
 | `GOOGLE_IOS_CLIENT_ID` | Google iOS 클라이언트 ID |
 
-iOS 는 `ios/Flutter/Secrets.xcconfig` (gitignore) 에 `KAKAO_NATIVE_APP_KEY=...` 를 둔다. Sign in with Apple 은 iOS 에서만 노출 (STO-04).
+iOS 는 URL 스킴(`kakao{키}`, Google 역순 클라이언트 ID)을 `ios/Flutter/Secrets.xcconfig` (gitignore) 에서 읽는다. `python3 tool/make_dev_env.py --ios` 가 env json 과 같은 키로 둘 다 만든다. Sign in with Apple 은 iOS 에서만 노출 (STO-04). 유료 개발자 팀이 있어야 해서 `Runner.entitlements` 는 아직 없다 — 그 전까지 iOS 애플 로그인은 실패한다.
+
+### iOS 시뮬레이터 (Mac 한 대에서 전부)
+
+시뮬레이터는 Mac 의 `localhost` 를 그대로 쓴다 (Android 의 `10.0.2.2` 같은 우회 없음). `http://localhost:5173` 은 카카오 콘솔 Web 에 이미 등록돼 있다. 플러그인은 Swift Package Manager 로 받으므로 CocoaPods 는 필요 없다.
+
+1. 준비 (한 번만): Xcode, Flutter 3.50+, .NET 10 (`brew install dotnet@10`, keg-only 라 `export PATH="/opt/homebrew/opt/dotnet@10/bin:$PATH"`), Docker
+2. 백엔드 (Mashil-Back): README 의 빌드 & 실행대로 `docker compose up -d` → user-secrets → `dotnet ef database update` → 임포트 → `dotnet run --project src/Mashil.Api` (:5099)
+3. 웹 (Mashil-Front): `.env.local` 에 `VITE_KAKAO_MAP_KEY` → `npm run dev` (:5173, `/api` 는 :5099 로 프록시)
+4. 앱:
+   ```
+   python3 tool/make_dev_env.py --ios      # env/ios-sim.json + ios/Flutter/Secrets.xcconfig
+   open -a Simulator
+   flutter run -d "iPhone 16" --dart-define-from-file=env/ios-sim.json
+   ```
+
+카카오톡이 없는 시뮬레이터는 카카오계정 로그인(웹)으로 넘어간다. 카카오 로그인을 보려면 카카오 콘솔 [플랫폼] → iOS 에 번들 ID `dev.ironhiro.mashil` 이 있어야 한다.
 
 ### 아이폰에서 테스트 (Mac)
 
@@ -83,11 +99,9 @@ iOS 는 `ios/Flutter/Secrets.xcconfig` (gitignore) 에 `KAKAO_NATIVE_APP_KEY=...
 3. 카카오 콘솔 [플랫폼] → Web 에 `http://<PC IP>:5173` 추가 (지도 JS SDK). 카카오 로그인까지 볼 거면 [플랫폼] → iOS 에 번들 ID `dev.ironhiro.mashil` 추가
 
 **Mac (한 번만)**
-1. Xcode (App Store), Flutter, CocoaPods (`brew install cocoapods`) 설치, `flutter doctor` 로 iOS 항목 확인
+1. Xcode (App Store), Flutter 설치, `flutter doctor` 로 iOS 항목 확인 (플러그인은 Swift Package Manager 로 받아서 CocoaPods 는 필요 없다)
 2. 저장소를 받고 `app/` 에서 `flutter pub get`
-3. 키 파일 두 개를 직접 만든다 (git 에 없음, 메신저·메일로 키를 보내지 말 것):
-   - `env/ios.json`: `env/example.json` 을 복사해 `WEB_BASE_URL`·`API_BASE_URL` 을 `http://<PC IP>:5173`, `KAKAO_NATIVE_APP_KEY` 를 채운다 (Google 은 비워도 됨)
-   - `ios/Flutter/Secrets.xcconfig`: `KAKAO_NATIVE_APP_KEY=<같은 키>`
+3. 키 파일을 만든다 (git 에 없음, 메신저·메일로 키를 보내지 말 것): `python3 tool/make_dev_env.py --ios --host <PC IP> --out ios` → `env/ios.json` + `ios/Flutter/Secrets.xcconfig`. 이 Mac 에 백엔드 user-secrets 가 없으면 키가 비므로 두 파일의 카카오 키를 직접 채운다 (같은 값). 서버도 Mac 에서 띄웠다면 `<PC IP>` 대신 Mac 의 IP
 4. `open ios/Runner.xcworkspace` → Runner 타깃 → Signing & Capabilities → Team 에 내 Apple ID (무료 개인 팀 가능)
 
 **아이폰**

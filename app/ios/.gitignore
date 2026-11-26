@@ -32,3 +32,6 @@ Runner/GeneratedPluginRegistrant.*
 !default.mode2v3
 !default.pbxuser
 !default.perspectivev3
+
+# Swift Package Manager (Flutter 가 빌드할 때 만든다)
+**/xcshareddata/swiftpm/

@@ -100,6 +100,14 @@
 				<string>kakao$(KAKAO_NATIVE_APP_KEY)</string>
 			</array>
 		</dict>
+		<!-- Google 로그인 리다이렉트: iOS 클라이언트 ID 의 역순 (com.googleusercontent.apps.xxx).
+		     Secrets.xcconfig 의 GOOGLE_REVERSED_CLIENT_ID, tool/make_dev_env.py --ios 가 채운다 -->
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>$(GOOGLE_REVERSED_CLIENT_ID)</string>
+			</array>
+		</dict>
 	</array>
 </dict>
 </plist>
