@@ -61,7 +61,7 @@
 | [docs/05-operations.md](docs/05-operations.md) | 운영 설계: 일일 데이터 갱신, 무중단 배포, 점검 모드 |
 | [docs/06-data-profile.md](docs/06-data-profile.md) | LOCALDATA 전국파일 프로파일링 결과 (P0) |
 | [docs/07-ui-design.md](docs/07-ui-design.md) | UI 디자인 결정: Wayfind 방향, 색 토큰(라이트/다크), 서체, 지도 핀과 묶음, 화면별 결정, 앱 아이콘 사양 |
-| [docs/08-infrastructure.md](docs/08-infrastructure.md) | 배포 인프라 설계: 구성도, 네트워크·보안, 배포 파이프라인, 백업·복구, 감시, 출시 체크리스트 |
+| [docs/08-infrastructure.md](docs/08-infrastructure.md) | 배포 인프라 (운영 중, Azure Container Apps): 구성도, 네트워크·보안, 배포·운영 승격, 백업·복구, 감시, 점검 모드, 남은 일 |
 
 다이어그램은 Mermaid로 작성했다. VS Code(Markdown Preview Mermaid Support 확장)나 GitHub에서 렌더링된다.
 

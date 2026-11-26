@@ -407,7 +407,7 @@ flowchart LR
 | ~~Q14~~ | ~~LOCALDATA 자동 다운로드 불가~~ → **해결 (2026-11-14):** 정보 페이지가 공공데이터포털 표준데이터 페이지에서 넘어온 요청(Referer)만 연다는 것을 확인했다. 포털 Referer를 붙여 서비스 UA로 자동 다운로드에 성공했다 (run #8). 사이트 조건이 바뀌면 다시 막힐 수 있으므로 실패 알림과 수동 업로드 경로는 유지한다 | DATA-18, DATA-19 |
 | ~~Q12~~ | ~~Kakao Local API 일일 할당량~~ → **해결 (2026-11-14): 무료 일 100,000건.** 최초 적재 예상 호출 약 52,000건(고유 주소 44,485건 + 지번 재시도 약 7,000건)이라 **하루에 끝난다** | DATA-10, DATA-25 |
 | ~~Q13~~ | ~~신규 행정구역명을 Kakao가 인식하는지~~ → **해결 (2026-11-14 샘플 테스트):** 20건 중 19건 매칭. 전체 샘플 매칭률 95.9% ([06-data-profile.md §9.2](06-data-profile.md)) | DATA-24 |
-| Q11 | 호스팅 플랫폼과 리전 (국내 리전 권장. 무중단 방식이 플랫폼에 따라 달라짐) | OPS-02, NFR-16 |
+| ~~Q11~~ | ~~호스팅 플랫폼과 리전~~ → **결정: Azure Container Apps (한국 중부) + PostgreSQL Flexible Server (한국 남부)**. 무중단은 리비전 전환, 운영은 개발 이미지를 날짜 태그로 승격 ([08-infrastructure.md](08-infrastructure.md), 백엔드 `docs/AZURE.md`) | OPS-02, NFR-16 |
 | Q9 | Kakao 이메일 동의 항목을 요청할지 (식별에는 쓰지 않음. 공지 발송 등 용도가 있을 때만) | LEG-03, LEG-05 |
 | Q4 | 공휴일 데이터 소스 (외부 API vs 정적 테이블) | MAP-05 |
 | ~~Q5~~ | ~~웹 호스팅 도메인~~ → **결정 (2026-11-16): 운영 `toilets.ironhiro.dev`, 개발 `toilets-dev.ironhiro.dev`** (웹과 API 한 도메인, Cloudflare DNS). 등록할 곳은 [08-infrastructure.md §7](08-infrastructure.md) | APP-01 |
