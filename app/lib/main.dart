@@ -1,7 +1,5 @@
 import 'dart:io' show Platform;
 
-import 'package:flutter_localizations/flutter_localizations.dart'
-    show GlobalWidgetsLocalizations;
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
 import 'package:material_ui/material_ui.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -113,10 +111,10 @@ class MashilApp extends StatelessWidget {
         onGenerateTitle: (ctx) => AppLocalizations.of(ctx).appTitle,
         // 웹이 setLanguage 로 알려 준 언어 (null 이면 기기 언어, 지원 안 하면 첫 항목인 ko)
         locale: locale,
+        // Material·Cupertino·Widgets 셋 다. Cupertino 가 빠지면 iOS 에서 ko 로케일 경고가 난다
         localizationsDelegates: const [
           AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
         // 대만·홍콩 기기(zh-TW)가 간체로 가지 않게 중국어는 글자 체계로 고른다
