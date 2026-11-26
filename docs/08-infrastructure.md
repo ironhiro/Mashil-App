@@ -135,7 +135,7 @@ flowchart LR
 |---|---|---|
 | 배포 | 배포마다 `/healthz/version` 으로 리비전·커밋 확인, 실패하면 자동 되돌림 | 동작함 |
 | 접속 기록·로그 | Log Analytics 작업 영역, **보관 30일** (처리방침의 "접속 기록 30일"과 같아야 한다) | 동작함 |
-| 웹 오류 | Sentry. 같은 웹 빌드가 개발 → 운영으로 승격되므로 environment 는 접속 호스트로 정한다 (Mashil-Front `src/lib/sentryEnv.ts`, DSN 은 빌드 변수 `VITE_SENTRY_DSN`) | **켬 (2026-11-27)** — Mashil-Back 변수 `VITE_SENTRY_DSN`, 서버와 같은 Sentry 프로젝트 (environment 로 구분). 운영은 다음 태그 승격부터 |
+| 웹 오류 | Sentry. 같은 웹 빌드가 개발 → 운영으로 승격되므로 environment 는 접속 호스트로 정한다 (Mashil-Front `src/lib/sentryEnv.ts`, DSN 은 빌드 변수 `VITE_SENTRY_DSN`) | **켬 (2026-11-27)** — Mashil-Back 변수 `VITE_SENTRY_DSN`, 서버와 같은 Sentry 프로젝트 (environment 로 구분). 개발·운영 모두 반영 (운영 `v2026.11.26.2`) |
 | 서버 오류 | API·Worker 의 `Sentry__Dsn` | **켬 (2026-11-26)** — 운영·개발 API·Worker 4개 모두 시크릿 `sentry-dsn`. 같은 프로젝트, `Sentry__Environment` 가 `production`/`development` |
 | API 생존 | 외부 업타임 감시가 `/healthz/ready` 를 1분마다 (DB 까지 확인), 3회 연속 실패 시 알림 | **없음** — Azure 가용성 테스트 없음. 외부 서비스(UptimeRobot 등) 가입 여부는 본인 확인 |
 | 일일 갱신 | Worker 가 실패·검증 거부·대량 삭제 보류·48시간 신선도를 `Alerts__WebhookUrl` 로 | **켬 (2026-11-26)** — 운영 Worker 만, Discord 웹후크 (시크릿 `alert-webhook`). 개발 Worker 에는 넣지 않는다 |
