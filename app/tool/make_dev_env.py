@@ -83,6 +83,10 @@ def main() -> int:
         "KAKAO_NATIVE_APP_KEY": kakao,
         "GOOGLE_SERVER_CLIENT_ID": google_server,
         "GOOGLE_IOS_CLIENT_ID": google_ios,
+        # 개발은 Google 테스트 광고 (단위·앱 ID 를 비우면 테스트 ID). 실제 ID 는 프로덕션 env 에만
+        "ADS_ENABLED": "true",
+        "ADMOB_BANNER_ID": "",
+        "ADMOB_APP_ID_ANDROID": "",
     }
     out = APP / "env" / f"{args.out or ('ios-sim' if args.ios else 'dev')}.json"
     out.write_text(json.dumps(env, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

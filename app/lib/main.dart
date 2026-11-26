@@ -9,6 +9,7 @@ import 'app_config.dart';
 import 'auth/social_auth_service.dart';
 import 'l10n/app_localizations.dart';
 import 'bridge/mashil_js_bridge.dart';
+import 'services/ad_service.dart';
 import 'services/app_language.dart';
 import 'services/connectivity_service.dart';
 import 'services/external_launcher.dart';
@@ -79,6 +80,7 @@ class MashilApp extends StatelessWidget {
     // 시작 연출(닫힌 문이 열림)은 웹뷰 위에 덮이고, 웹뷰는 그 뒤에서 이미 불러온다.
     // 첫 페이지가 뜨면 true: 시작 연출은 그때까지 닫힌 문으로 기다린다 (빈 웹뷰가 보이지 않도록)
     final webShown = ValueNotifier(false);
+    final ads = config.adsEnabled ? AdMobService(config.bannerUnitIdFor(appInfo.platform)) : null;
     final home = SplashGate(
       ready: webShown,
       child: _VersionGate(
@@ -89,7 +91,15 @@ class MashilApp extends StatelessWidget {
           deepLinks: deepLinks,
           launcher: launcher,
           connectivity: ConnectivityService(),
-          onFirstShown: () => webShown.value = true,
+          ads: ads,
+          onFirstShown: () {
+            webShown.value = true;
+            // 광고 SDK 는 시작 연출이 끝난 뒤에 (첫 화면을 늦추지 않도록)
+            Future<void>.delayed(
+              SplashGate.startDelay + SplashGate.total + const Duration(milliseconds: 300),
+              () => ads?.start(),
+            );
+          },
           bridgeFactory: (runJs, isTrusted) => MashilJsBridge(
             runJavaScript: runJs,
             location: location,
@@ -100,6 +110,7 @@ class MashilApp extends StatelessWidget {
             isTrustedPage: isTrusted,
             share: ShareService(),
             shareHosts: config.allowedHosts,
+            ads: ads,
           ),
         ),
       ),

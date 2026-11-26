@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import '../auth/social_auth_service.dart';
+import '../services/ad_service.dart';
 import '../services/app_language.dart';
 import '../services/external_launcher.dart';
 import '../services/location_service.dart';
@@ -19,7 +20,7 @@ class AppInfo {
 ///
 /// | method | params | 응답 |
 /// |---|---|---|
-/// | getAppInfo | — | { ok, version, platform, providers, language } |
+/// | getAppInfo | — | { ok, version, platform, providers, language, ads: { enabled } } |
 /// | getLocation | { maximumAgeMs?, highAccuracy?, timeoutMs? } | { ok, lat, lng, accuracy, cached } / { ok:false, reason } |
 /// | openSettings | — | { ok } |
 /// | openDirections | { lat, lng, name, mode?: walk·car } | { ok, app } (mode 가 없거나 모르는 값이면 walk) |
@@ -28,6 +29,7 @@ class AppInfo {
 /// | setLanguage | { language: ko·en } | { ok, language } / { ok:false, reason: unsupportedLanguage } |
 /// | watchLocation | { highAccuracy?, distanceFilterM? } | { ok } / { ok:false, reason } — 이후 `location` 이벤트 |
 /// | stopWatchLocation | — | { ok } |
+/// | setAdBanner | { visible } | { ok } / { ok:false, reason: adsDisabled } — 목록·검색 결과, 화장실 상세에서만 켠다 (MON-01) |
 /// | share | { target: kakao·system, title, url, description?, address?, buttonTitle? } | { ok, via: kakaoTalk·kakaoWeb·shared } / { ok:false, reason: dismissed·invalidParams·failed } |
 ///
 /// 앱 → 웹 이벤트 (`window.__mashilBridgeEvent(name, data)`):
@@ -47,6 +49,7 @@ class MashilJsBridge {
     required this.isTrustedPage,
     required this.share,
     this.shareHosts = const {},
+    this.ads,
   });
 
   static const channelName = 'MashilBridge';
@@ -67,6 +70,9 @@ class MashilJsBridge {
 
   /// 공유할 수 있는 링크의 호스트 (앱이 띄우는 웹 = 허용 호스트). 다른 주소는 공유하지 않는다.
   final Set<String> shareHosts;
+
+  /// 하단 배너 광고 (꺼져 있으면 null). 웹이 [AdService.wanted] 를 켜고 끈다
+  final AdService? ads;
 
   bool _signInBusy = false;
 
@@ -107,6 +113,7 @@ class MashilJsBridge {
           'platform': appInfo.platform,
           'providers': auth.availableProviders().map((p) => p.name).toList(),
           'language': language.value?.languageCode,
+          'ads': {'enabled': ads != null},
         };
 
       case 'getLocation':
@@ -207,6 +214,12 @@ class MashilJsBridge {
         final code = m.params['language'];
         if (code is! String || !await language.set(code)) return {'ok': false, 'reason': 'unsupportedLanguage'};
         return {'ok': true, 'language': language.value!.languageCode};
+
+      case 'setAdBanner':
+        final a = ads;
+        if (a == null) return {'ok': false, 'reason': 'adsDisabled'};
+        a.wanted.value = m.params['visible'] == true;
+        return {'ok': true};
 
       default:
         return {'ok': false, 'reason': 'unknownMethod'};

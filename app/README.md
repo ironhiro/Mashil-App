@@ -70,6 +70,9 @@ python tool/make_dev_env.py --web http://10.0.2.2:5173
 | `KAKAO_NATIVE_APP_KEY` | 카카오 네이티브 앱 키. Android 리다이렉트 스킴에도 쓰인다 (Gradle 이 dart-defines 에서 읽음) |
 | `GOOGLE_SERVER_CLIENT_ID` | Google **웹** 클라이언트 ID (Android 에서 ID Token 의 aud). 비우면 Google 버튼 없음 |
 | `GOOGLE_IOS_CLIENT_ID` | Google iOS 클라이언트 ID |
+| `ADS_ENABLED` | `true` 면 하단 배너 광고 (AdMob, MON-01). 아니면 광고 SDK 를 시작하지 않는다 |
+| `ADMOB_BANNER_ID` | 배너 광고 단위 ID. **비우면 Google 테스트 단위** — 실제 ID 는 AdMob 앱 승인 뒤 프로덕션 env 에만 (테스터가 실제 광고를 누르면 무효 트래픽) |
+| `ADMOB_APP_ID_ANDROID` | AdMob 앱 ID (Gradle 이 매니페스트에 넣음). 비우면 테스트 앱 ID. iOS 는 `Secrets.xcconfig` 의 `ADMOB_APP_ID_IOS` |
 
 iOS 는 URL 스킴(`kakao{키}`, Google 역순 클라이언트 ID)을 `ios/Flutter/Secrets.xcconfig` (gitignore) 에서 읽는다. `python3 tool/make_dev_env.py --ios` 가 env json 과 같은 키로 둘 다 만든다. Sign in with Apple 은 iOS 에서만 노출 (STO-04). 유료 개발자 팀이 있어야 해서 `Runner.entitlements` 는 아직 없다 — 그 전까지 iOS 애플 로그인은 실패한다.
 
@@ -112,6 +115,18 @@ iOS 는 URL 스킴(`kakao{키}`, Google 역순 클라이언트 ID)을 `ios/Flutt
 
 무료 개인 팀으로 설치한 앱은 7일 뒤 열리지 않는다 (다시 `flutter run`). 무료 팀은 Sign in with Apple 기능을 쓸 수 없어서 애플 로그인은 실패한다.
 
+## 광고 (AdMob, docs/01 MON-01)
+
+화면 아래 고정 적응형 배너 하나 (`lib/shell/ad_banner.dart`, `lib/services/ad_service.dart`). 전면·앱 오프닝 광고는 쓰지 않는다.
+
+- **보이는 화면은 웹이 정한다**: 목록·검색 결과와 화장실 상세에서 브리지 `setAdBanner { visible: true }`, 떠날 때 `false`. 문서를 새로 불러오면 꺼진다. 끄면 광고를 버린다 (안 보이는 광고가 뒤에서 갱신되지 않도록)
+- **비맞춤 광고**만 요청한다 (`nonPersonalizedAds`). 그래서 동의 화면(UMP)이 없다. 맞춤 광고로 바꾸면 UMP, 처리방침, Play 데이터 보안을 함께 고친다
+- 웹 화면과 8px 띄우고 선을 긋는다 (실수 클릭 배치는 AdMob 정책 위반). 키보드가 올라오거나 오류·점검 화면이면 숨긴다
+- 배너가 보이면 제스처 막대 위를 배너가 차지하므로, 앱이 `<html>` 에 `--app-safe-bottom: 0px` 을 넣는다. 웹은 하단 여백에 `env(safe-area-inset-bottom)` 대신 이 변수를 쓴다 (Mashil-Front `tokens.css`)
+- SDK 초기화는 시작 연출이 끝난 뒤
+- ID 를 비우면 Google 테스트 ID. 실제 ID 는 AdMob 앱 승인(스토어 등록 후) 뒤 프로덕션 env 에만
+- iOS 는 SDK 가 시작할 때 필요한 테스트 앱 ID 만 넣어 두었다. 출시할 때 `SKAdNetworkItems`, 추적 동의(ATT) 문구를 추가한다
+
 ## JS 브리지
 
 - 웹 → 앱: `window.MashilBridge.postMessage(JSON.stringify({ requestId, method, params }))`
@@ -121,13 +136,14 @@ iOS 는 URL 스킴(`kakao{키}`, Google 역순 클라이언트 ID)을 `ios/Flutt
 
 | method | params | 응답 |
 |---|---|---|
-| `getAppInfo` | — | `{ ok, version, platform, providers, language }` |
+| `getAppInfo` | — | `{ ok, version, platform, providers, language, ads: { enabled } }` |
 | `getLocation` | `{ maximumAgeMs?, highAccuracy?, timeoutMs? }` | `{ ok, lat, lng, accuracy, cached }` / `{ ok:false, reason: denied·deniedForever·serviceDisabled·timeout }`. `maximumAgeMs` 안의 마지막 위치면 바로 (`cached: true`) |
 | `openSettings` | — | `{ ok }` |
 | `openDirections` | `{ lat, lng, name }` | `{ ok, app: kakaomap·web }` |
 | `signIn` | `{ provider: kakao·google·apple, nonce }` | `{ ok, provider, idToken?, accessToken?, authorizationCode?, displayName? }` / `{ ok:false, reason: cancelled·failed·busy·unknownProvider }` |
 | `signOut` | `{ provider }` | `{ ok }` |
 | `setLanguage` | `{ language: ko·en }` | `{ ok, language }` / `{ ok:false, reason: unsupportedLanguage }` |
+| `setAdBanner` | `{ visible }` | `{ ok }` / `{ ok:false, reason: adsDisabled }`. 하단 배너 켜고 끄기 (목록·검색 결과, 화장실 상세만). 문서를 새로 불러오면 꺼진다 |
 
 ### 웹 쪽 구현 (`src/lib/nativeBridge.ts` 예시)
 

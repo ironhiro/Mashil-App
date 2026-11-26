@@ -50,6 +50,16 @@
                 <data android:scheme="kakao${kakaoNativeAppKey}" android:host="oauth" />
             </intent-filter>
         </activity>
+        <!-- AdMob 앱 ID (빌드 시 dart-define ADMOB_APP_ID_ANDROID, 없으면 테스트 ID). 초기화·광고 로드를 메인 스레드 밖에서 -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="${admobAppId}" />
+        <meta-data
+            android:name="com.google.android.gms.ads.flag.OPTIMIZE_INITIALIZATION"
+            android:value="true" />
+        <meta-data
+            android:name="com.google.android.gms.ads.flag.OPTIMIZE_AD_LOADING"
+            android:value="true" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
