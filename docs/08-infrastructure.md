@@ -125,7 +125,13 @@ flowchart LR
 
 - 백업: Flexible Server 자동 백업, **보관 7일**, 지역 중복 백업 꺼짐, 고가용성(HA) 꺼짐 (2026-11-26 확인). 그 안의 시점으로 복원(PITR)할 수 있다. VM 설계의 `pg_dump` 크론과 주간 4주 보관은 없다.
 - 목표: RPO 24시간 이하(PITR 로 실제로는 분 단위), RTO 2시간.
-- 복원 리허설: 별도 서버로 시점 복원해 확인한다 (분기 1회). **아직 기록 없음 — 확인 필요**.
+- 복원 리허설: 별도 서버로 시점 복원해 확인한다 (분기 1회). 운영 서버는 건드리지 않는다.
+
+  | 날짜 | 복원 시점 | 걸린 시간 | 확인한 것 | 결과 |
+  |---|---|---|---|---|
+  | 2026-11-27 | 08:20 UTC (30분 전) | **7분** (`az postgres flexible-server restore`, B1ms) | 마이그레이션 최신(`AnonymousRatings`), 테이블 27개 행 수 (toilets 53,594 · walk_edges 3,714,948 · ratings 3 …), 마지막 일일 갱신(11-26 19:30 UTC)까지 있음, PostGIS 3.6.4 공간 쿼리 (서울시청 500m 안 27곳) | 정상. 복원 서버는 확인 뒤 삭제 |
+
+  절차: `restore --source-server pg-mashil-ks-854a5c --restore-time <UTC>` → 복원 서버 방화벽에만 확인하는 IP 를 잠깐 연다 (복원 서버는 원본의 "Azure 서비스 허용" 규칙만 물려받음) → 행 수·최신 시각 확인 → 삭제. 실제 장애 때는 복원 서버의 연결 문자열을 시크릿 `db` 에 넣고 API·Worker 리비전을 다시 띄운다 (RTO 목표 2시간 안).
 
 ## 6. 감시
 
@@ -137,7 +143,7 @@ flowchart LR
 | 접속 기록·로그 | Log Analytics 작업 영역, **보관 30일** (처리방침의 "접속 기록 30일"과 같아야 한다) | 동작함 |
 | 웹 오류 | Sentry. 같은 웹 빌드가 개발 → 운영으로 승격되므로 environment 는 접속 호스트로 정한다 (Mashil-Front `src/lib/sentryEnv.ts`, DSN 은 빌드 변수 `VITE_SENTRY_DSN`) | **켬 (2026-11-27)** — Mashil-Back 변수 `VITE_SENTRY_DSN`, 서버와 같은 Sentry 프로젝트 (environment 로 구분). 개발·운영 모두 반영 (운영 `v2026.11.26.2`) |
 | 서버 오류 | API·Worker 의 `Sentry__Dsn` | **켬 (2026-11-26)** — 운영·개발 API·Worker 4개 모두 시크릿 `sentry-dsn`. 같은 프로젝트, `Sentry__Environment` 가 `production`/`development` |
-| API 생존 | 외부 업타임 감시가 `/healthz/ready` 를 1분마다 (DB 까지 확인), 3회 연속 실패 시 알림 | **없음** — Azure 가용성 테스트 없음. 외부 서비스(UptimeRobot 등) 가입 여부는 본인 확인 |
+| API 생존 | 외부 업타임 감시가 `/healthz/ready` 를 1분마다 (DB 까지 확인), 3회 연속 실패 시 알림 | **켬 (2026-11-27)** — 외부 업타임 감시 서비스 (Azure 가용성 테스트는 쓰지 않음) |
 | 일일 갱신 | Worker 가 실패·검증 거부·대량 삭제 보류·48시간 신선도를 `Alerts__WebhookUrl` 로 | **켬 (2026-11-26)** — 운영 Worker 만, Discord 웹후크 (시크릿 `alert-webhook`). 개발 Worker 에는 넣지 않는다 |
 | 지오코딩 | 일일 예산(`Geocode:DailyBudget` 80,000 — 운영·개발이 카카오 무료 한도를 나눠 씀) 소진, 429/401 이면 다음 날까지 쉼 | 동작함 (로그만) |
 | DB 용량 | 32GB 중 **약 21% 사용** (2026-11-26). 도보망 교체 때 잠깐 약 1GB 더 | **자동 증가 켬 (2026-11-26)** — 꽉 차도 읽기 전용이 되지 않고 늘어난다 (줄일 수는 없음). 80% 경고는 아직 없음 |
@@ -169,7 +175,7 @@ flowchart LR
 |---|---|
 | 읽기 전용·전체 점검 (API 는 살아 있음) | 관리자 화면에서 `PUT /api/admin/app-status` (ADM-06). 웹은 자기 점검 화면, 앱은 웹을 못 불러올 때 네이티브 점검 화면 |
 | 관리자 로그인이 안 될 때 | `mashil-api` 환경 변수 `App__Status__Maintenance=true` (또는 `ReadOnly`) 로 새 리비전 |
-| API 자체를 내려야 할 때 | VM 설계의 `status.json` 정적 폴백(Caddy)은 **없다**. 앱은 웹을 못 불러오면 일반 오류 화면을 보인다. 필요해지면 정적 폴백을 둘 곳(예: 별도 정적 호스팅)을 정한다 |
+| API 자체를 내려야 할 때 | VM 설계의 `status.json` 정적 폴백(Caddy)은 **두지 않는다 (2026-11-27 결정)**. 브라우저 접속은 막혀 있고(앱 전용), 앱은 웹을 못 불러오면 네이티브 오류 화면(503 이면 점검 화면)을 보인다. 대신 재시도를 손본다 (아래 남은 일) |
 
 ## 9. 남은 일
 
@@ -179,12 +185,15 @@ flowchart LR
 - [x] `/healthz`, `/healthz/ready`, `/healthz/version`
 - [x] 위치 쿼리 로그 마스킹 (API 요청 로그)
 - [x] 도보 도로망 월 1회 갱신 Job
-- [ ] 업타임 감시 등록 (외부 서비스 또는 Application Insights 가용성 테스트) + 알림 받을 곳 (Azure 작업 그룹 또는 메일·웹훅) — 2026-11-26 기준 없음
+- [x] 업타임 감시 등록 — 외부 서비스 (2026-11-27)
 - [x] 운영 Worker `Alerts__WebhookUrl` — Discord 웹후크 (2026-11-26)
 - [x] 서버 `Sentry__Dsn` (API·Worker, 시크릿 `sentry-dsn`) (2026-11-26)
 - [x] 웹 `VITE_SENTRY_DSN` (Mashil-Back 변수, 같은 프로젝트) (2026-11-27)
 - [x] DB 저장소 자동 증가 (2026-11-26)
 - [ ] DB 저장소 사용률 80% 경고 + 알림 받을 곳 (작업 그룹)
-- [ ] 시점 복원(PITR) 리허설 1회와 기록
-- [ ] API 가 내려간 동안의 점검 안내 (정적 폴백) 필요 여부 결정
+- [x] 시점 복원(PITR) 리허설 1회와 기록 (2026-11-27, 7분, §5)
+- [x] API 가 내려간 동안의 점검 안내 (정적 폴백) — 두지 않음 (2026-11-27, §8)
+- [ ] 서버 DB 재시도: API·Worker `UseNpgsql` 에 `EnableRetryOnFailure` 없음 → DB 재시작·순간 끊김에 요청이 바로 500 (직접 트랜잭션은 ExecutionStrategy 로)
+- [ ] API readiness 프로브 `/healthz/ready` — 지금 `probes: null`, 레플리카 1개 (임계값 넉넉히)
+- [ ] 앱 오류 화면 자동 재시도 (점점 늘리는 간격) — 지금은 오프라인→온라인일 때만 저절로, 서버만 죽었으면 사용자가 눌러야 한다
 - [ ] 백엔드 `docs/OPERATIONS.md` 첫머리에 "VM 구성용, 운영은 AZURE.md" 표시 (지금은 "아직 운영 서버는 없다"로 되어 있음)
