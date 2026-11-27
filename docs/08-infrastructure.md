@@ -196,4 +196,4 @@ flowchart LR
 - [ ] 서버 DB 재시도: API·Worker `UseNpgsql` 에 `EnableRetryOnFailure` 없음 → DB 재시작·순간 끊김에 요청이 바로 500 (직접 트랜잭션은 ExecutionStrategy 로)
 - [ ] API readiness 프로브 `/healthz/ready` — 지금 `probes: null`, 레플리카 1개 (임계값 넉넉히)
 - [ ] 앱 오류 화면 자동 재시도 (점점 늘리는 간격) — 지금은 오프라인→온라인일 때만 저절로, 서버만 죽었으면 사용자가 눌러야 한다
-- [ ] 백엔드 `docs/OPERATIONS.md` 첫머리에 "VM 구성용, 운영은 AZURE.md" 표시 (지금은 "아직 운영 서버는 없다"로 되어 있음)
+- [x] 백엔드 `docs/OPERATIONS.md` 첫머리에 "VM 구성용, 운영은 AZURE.md" 표시 (Mashil-Back #52)
