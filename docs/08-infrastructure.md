@@ -143,7 +143,7 @@ flowchart LR
 | 접속 기록·로그 | Log Analytics 작업 영역, **보관 30일** (처리방침의 "접속 기록 30일"과 같아야 한다) | 동작함 |
 | 웹 오류 | Sentry. 같은 웹 빌드가 개발 → 운영으로 승격되므로 environment 는 접속 호스트로 정한다 (Mashil-Front `src/lib/sentryEnv.ts`, DSN 은 빌드 변수 `VITE_SENTRY_DSN`) | **켬 (2026-11-27)** — Mashil-Back 변수 `VITE_SENTRY_DSN`, 서버와 같은 Sentry 프로젝트 (environment 로 구분). 개발·운영 모두 반영 (운영 `v2026.11.26.2`) |
 | 서버 오류 | API·Worker 의 `Sentry__Dsn` | **켬 (2026-11-26)** — 운영·개발 API·Worker 4개 모두 시크릿 `sentry-dsn`. 같은 프로젝트, `Sentry__Environment` 가 `production`/`development` |
-| API 생존 | 외부 업타임 감시가 `/healthz/ready` 를 1분마다 (DB 까지 확인), 3회 연속 실패 시 알림 | **켬 (2026-11-27)** — 외부 업타임 감시 서비스 (Azure 가용성 테스트는 쓰지 않음) |
+| API 생존 | 외부 업타임 감시가 `/healthz/ready` 를 1분마다 (DB 까지 확인), 3회 연속 실패 시 알림 | **켬 (2026-11-27)** — UptimeRobot (Azure 가용성 테스트는 쓰지 않음) |
 | 일일 갱신 | Worker 가 실패·검증 거부·대량 삭제 보류·48시간 신선도를 `Alerts__WebhookUrl` 로 | **켬 (2026-11-26)** — 운영 Worker 만, Discord 웹후크 (시크릿 `alert-webhook`). 개발 Worker 에는 넣지 않는다 |
 | 지오코딩 | 일일 예산(`Geocode:DailyBudget` 80,000 — 운영·개발이 카카오 무료 한도를 나눠 씀) 소진, 429/401 이면 다음 날까지 쉼 | 동작함 (로그만) |
 | DB 용량 | 32GB 중 **약 21% 사용** (2026-11-26). 도보망 교체 때 잠깐 약 1GB 더 | **자동 증가 켬 (2026-11-26)** — 꽉 차도 읽기 전용이 되지 않고 늘어난다 (줄일 수는 없음). 80% 경고는 아직 없음 |
@@ -185,7 +185,7 @@ flowchart LR
 - [x] `/healthz`, `/healthz/ready`, `/healthz/version`
 - [x] 위치 쿼리 로그 마스킹 (API 요청 로그)
 - [x] 도보 도로망 월 1회 갱신 Job
-- [x] 업타임 감시 등록 — 외부 서비스 (2026-11-27)
+- [x] 업타임 감시 등록 — UptimeRobot (2026-11-27)
 - [x] 운영 Worker `Alerts__WebhookUrl` — Discord 웹후크 (2026-11-26)
 - [x] 서버 `Sentry__Dsn` (API·Worker, 시크릿 `sentry-dsn`) (2026-11-26)
 - [x] 웹 `VITE_SENTRY_DSN` (Mashil-Back 변수, 같은 프로젝트) (2026-11-27)
